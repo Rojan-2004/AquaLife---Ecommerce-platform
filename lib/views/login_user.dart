@@ -1,3 +1,4 @@
+import 'package:aqua_life/views/dashboard_user_view.dart';
 import 'package:aqua_life/views/sign_up_user_view.dart';
 import 'package:flutter/material.dart';
 
@@ -144,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 4),
                         const Text(
-                          'Please enter your details to sign in.',
+                          'Please enter your details to log in.',
                           style: TextStyle(
                             fontSize: 13,
                             color: Color(0xFF7AB8CC),
@@ -239,7 +240,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              if (_formKey.currentState!.validate()) {}
+                              if (_formKey.currentState!.validate()) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const HomeScreen(),
+                                  ),
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1A3A5C),
@@ -250,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             child: const Text(
-                              'Sign In',
+                              'Log In',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
