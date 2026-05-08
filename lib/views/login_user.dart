@@ -305,7 +305,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: Color(0xFF7AB8CC),
                           fontSize: 13,
                         ),
- 
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SignUpScreen(),
+                          ),
+                        ),
+                        child: const Text(
+                          'Create Account',
+                          style: TextStyle(
+                            color: Color(0xFF00B4D8),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
