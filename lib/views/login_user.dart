@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aqua_life/views/sign_up_user_view.dart';
 
 class LoginScreenView extends StatelessWidget {
   const LoginScreenView({super.key});
@@ -106,7 +107,12 @@ class LoginScreenView extends StatelessWidget {
 
                   TextButton(
                     onPressed: () {
-                      // Navigate to register
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignUpScreenView(),
+                        ),
+                      );
                     },
                     child: const Text(
                       "Create Account",
