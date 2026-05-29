@@ -1,4 +1,4 @@
-import 'package:aqua_life/views/splash_view.dart';
+import 'package:classwork4/views/splash_view.dart';
 import 'package:flutter/material.dart';
 
 class App extends StatelessWidget {
