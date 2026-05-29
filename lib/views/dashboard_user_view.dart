@@ -1,3 +1,4 @@
+import 'package:aqua_life/views/bottoms_screen/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -6,11 +7,11 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: kBg,
       bottomNavigationBar: _buildBottomNav(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: const Color(0xFF00B4D8),
+        backgroundColor: kAccent,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
@@ -41,7 +42,7 @@ class HomeScreen extends StatelessWidget {
       children: [
         const Row(
           children: [
-            Icon(Icons.water_drop, color: Color(0xFF00B4D8), size: 20),
+            Icon(Icons.water_drop, color: kAccent, size: 20),
             SizedBox(width: 6),
             Text(
               'AquaLife',
@@ -79,55 +80,81 @@ class HomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
-          colors: [Color(0xFF0D2137), Color(0xFF1A3A5C)],
+          colors: [
+            Color(0xFF0D2137),
+            Color(0xFF1A3A5C),
+          ], // banner gradient — kept as-is
         ),
       ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         children: [
-          const Text(
-            'Nemo (Clownfish)\nStarter Kits',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Nemo (Clownfish)\nStarter Kits',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Everything you need for your first reef friend.',
+                    style: TextStyle(color: kSub, fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Text(
+                        'Rs. 14,999',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kAccent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text(
+                          'Shop Now',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Everything you need for your first reef friend.',
-            style: TextStyle(color: Color(0xFF7AB8CC), fontSize: 12),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Text(
-                'Rs. 14,999',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00B4D8),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: const Text('Shop Now', style: TextStyle(fontSize: 12)),
-              ),
-            ],
+          // Clownfish image on the right
+          ClipRRect(
+            borderRadius: const BorderRadius.horizontal(
+              right: Radius.circular(16),
+            ),
+            child: Image.asset(
+              'assets/images/clownfish.png',
+              width: 120,
+              height: 160,
+              fit: BoxFit.cover,
+            ),
           ),
         ],
       ),
@@ -138,25 +165,21 @@ class HomeScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF112240),
+        color: kCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
+        border: Border.all(color: kBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(
-                Icons.smart_toy_outlined,
-                color: Color(0xFF00B4D8),
-                size: 16,
-              ),
+              Icon(Icons.smart_toy_outlined, color: kAccent, size: 16),
               SizedBox(width: 6),
               Text(
                 'AQUARIUM ASSISTANT',
                 style: TextStyle(
-                  color: Color(0xFF00B4D8),
+                  color: kAccent,
                   fontSize: 11,
                   letterSpacing: 1,
                 ),
@@ -175,7 +198,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 4),
           const Text(
             'Snap a photo to instantly identify species and get care recommendations.',
-            style: TextStyle(color: Color(0xFF7AB8CC), fontSize: 12),
+            style: TextStyle(color: kSub, fontSize: 12),
           ),
           const SizedBox(height: 12),
           ElevatedButton.icon(
@@ -183,8 +206,8 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.camera_alt_outlined, size: 16),
             label: const Text('Open Camera'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A3A5C),
-              foregroundColor: const Color(0xFF00B4D8),
+              backgroundColor: kMid,
+              foregroundColor: kAccent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -222,7 +245,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 Text(
                   'Everything for your aquatic world',
-                  style: TextStyle(color: Color(0xFF7AB8CC), fontSize: 12),
+                  style: TextStyle(color: kSub, fontSize: 12),
                 ),
               ],
             ),
@@ -230,7 +253,7 @@ class HomeScreen extends StatelessWidget {
               onPressed: () {},
               child: const Text(
                 'View All >',
-                style: TextStyle(color: Color(0xFF00B4D8), fontSize: 12),
+                style: TextStyle(color: kAccent, fontSize: 12),
               ),
             ),
           ],
@@ -247,17 +270,13 @@ class HomeScreen extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF112240),
+                color: kCard,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1E3A5C)),
+                border: Border.all(color: kBorder),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    c['icon'] as IconData,
-                    color: const Color(0xFF00B4D8),
-                    size: 24,
-                  ),
+                  Icon(c['icon'] as IconData, color: kAccent, size: 24),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,10 +292,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       Text(
                         c['sub'] as String,
-                        style: const TextStyle(
-                          color: Color(0xFF7AB8CC),
-                          fontSize: 11,
-                        ),
+                        style: const TextStyle(color: kSub, fontSize: 11),
                       ),
                     ],
                   ),
@@ -295,11 +311,13 @@ class HomeScreen extends StatelessWidget {
         'name': 'Neon Tetra Bundle',
         'sub': 'Pack of 10 schoolers',
         'price': 'Rs. 1,299',
+        'image': 'assets/images/neon_tetra.png',
       },
       {
         'name': 'Premium Coral',
         'sub': 'Handcrafted decor',
         'price': 'Rs. 4,499',
+        'image': 'assets/images/coral.png',
       },
     ];
 
@@ -326,9 +344,9 @@ class HomeScreen extends StatelessWidget {
               return Container(
                 width: 160,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF112240),
+                  color: kCard,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF1E3A5C)),
+                  border: Border.all(color: kBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,18 +354,15 @@ class HomeScreen extends StatelessWidget {
                     Expanded(
                       child: Stack(
                         children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0D2137),
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(16),
-                              ),
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(16),
                             ),
-                            width: double.infinity,
-                            child: const Icon(
-                              Icons.image,
-                              color: Color(0xFF1E3A5C),
-                              size: 50,
+                            child: Image.asset(
+                              p['image']!,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
                             ),
                           ),
                           Positioned(
@@ -356,7 +371,7 @@ class HomeScreen extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: const BoxDecoration(
-                                color: Color(0xFF1A3A5C),
+                                color: kMid,
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -384,10 +399,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           Text(
                             p['sub']!,
-                            style: const TextStyle(
-                              color: Color(0xFF7AB8CC),
-                              fontSize: 11,
-                            ),
+                            style: const TextStyle(color: kSub, fontSize: 11),
                           ),
                           const SizedBox(height: 6),
                           Row(
@@ -396,7 +408,7 @@ class HomeScreen extends StatelessWidget {
                               Text(
                                 p['price']!,
                                 style: const TextStyle(
-                                  color: Color(0xFF00B4D8),
+                                  color: kAccent,
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -405,7 +417,7 @@ class HomeScreen extends StatelessWidget {
                                 width: 24,
                                 height: 24,
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFF00B4D8),
+                                  color: kAccent,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -432,9 +444,9 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildBottomNav() {
     return BottomNavigationBar(
-      backgroundColor: const Color(0xFF0D1F35),
-      selectedItemColor: const Color(0xFF00B4D8),
-      unselectedItemColor: const Color(0xFF4A6B82),
+      backgroundColor: kInput,
+      selectedItemColor: kAccent,
+      unselectedItemColor: kHint,
       type: BottomNavigationBarType.fixed,
       currentIndex: 0,
       items: const [

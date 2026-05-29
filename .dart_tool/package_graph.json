@@ -17,7 +17,7 @@
     },
     {
       "name": "flutter_lints",
-      "version": "6.0.0",
+      "version": "2.0.3",
       "dependencies": [
         "lints"
       ]
@@ -59,7 +59,7 @@
     },
     {
       "name": "lints",
-      "version": "6.1.0",
+      "version": "2.1.1",
       "dependencies": []
     },
     {
@@ -71,7 +71,7 @@
     },
     {
       "name": "meta",
-      "version": "1.17.0",
+      "version": "1.18.0",
       "dependencies": []
     },
     {
@@ -133,7 +133,7 @@
     },
     {
       "name": "test_api",
-      "version": "0.7.10",
+      "version": "0.7.11",
       "dependencies": [
         "async",
         "boolean_selector",

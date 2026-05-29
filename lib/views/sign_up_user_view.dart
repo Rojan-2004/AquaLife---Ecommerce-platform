@@ -1,5 +1,13 @@
+import 'package:aqua_life/views/bottoms_screen/dashboard_screens_2.dart';
 import 'package:aqua_life/views/login_user.dart';
 import 'package:flutter/material.dart';
+
+const _primary = Color(0xFF00B4D8);
+const _border = Color(0xFF1E3A5C);
+const _inputBg = Color(0xFF0D1F35);
+const _textSub = Color(0xFF7AB8CC);
+const _textHint = Color(0xFF4A6B82);
+const _cardBg = Color(0xFF112240);
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -9,49 +17,40 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscure = true;
-  bool _agreed = false;
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _obscure = true, _agreed = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
     super.dispose();
   }
 
-  InputDecoration _inputDeco(String hint) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: Color(0xFF4A6B82)),
-    filled: true,
-    fillColor: const Color(0xFF0D1F35),
-    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF1E3A5C)),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF1E3A5C)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF00B4D8)),
-    ),
+  OutlineInputBorder _ob(bool focus) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(10),
+    borderSide: BorderSide(color: focus ? _primary : _border),
   );
 
-  Widget _label(String text) => Padding(
+  InputDecoration _deco(String hint) => InputDecoration(
+    hintText: hint,
+    hintStyle: const TextStyle(color: _textHint),
+    filled: true,
+    fillColor: _inputBg,
+    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+    border: _ob(false),
+    enabledBorder: _ob(false),
+    focusedBorder: _ob(true),
+  );
+
+  Widget _label(String t) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: Text(
-      text,
-      style: const TextStyle(
-        fontSize: 11,
-        color: Color(0xFF7AB8CC),
-        letterSpacing: 1,
-      ),
+      t,
+      style: const TextStyle(fontSize: 11, color: _textSub, letterSpacing: 1),
     ),
   );
 
@@ -65,7 +64,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 12),
-        side: const BorderSide(color: Color(0xFF1E3A5C)),
+        side: const BorderSide(color: _border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     ),
@@ -98,7 +97,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       color: const Color(0xFF1A3A5C),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00B4D8).withOpacity(0.4),
+                          color: _primary.withOpacity(0.4),
                           blurRadius: 20,
                           spreadRadius: 2,
                         ),
@@ -106,7 +105,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     child: const Icon(
                       Icons.water_drop,
-                      color: Color(0xFF00B4D8),
+                      color: _primary,
                       size: 30,
                     ),
                   ),
@@ -122,61 +121,61 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const Text(
                     'Dive into a new aquatic experience',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF7AB8CC)),
+                    style: TextStyle(fontSize: 12, color: _textSub),
                   ),
                   const SizedBox(height: 32),
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF112240).withOpacity(0.8),
+                      color: _cardBg.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF1E3A5C)),
+                      border: Border.all(color: _border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _label('FULL NAME'),
                         TextFormField(
-                          controller: _nameController,
+                          controller: _nameCtrl,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
-                          decoration: _inputDeco('John Doe'),
-                          validator: (v) => (v == null || v.isEmpty)
+                          decoration: _deco('John Doe'),
+                          validator: (v) => (v?.isEmpty ?? true)
                               ? 'Please enter your full name'
                               : null,
                         ),
                         const SizedBox(height: 16),
                         _label('EMAIL ADDRESS'),
                         TextFormField(
-                          controller: _emailController,
+                          controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
-                          decoration: _inputDeco('hello@aqualife.com'),
-                          validator: (v) => (v == null || v.isEmpty)
+                          decoration: _deco('hello@aqualife.com'),
+                          validator: (v) => (v?.isEmpty ?? true)
                               ? 'Please enter your email'
                               : null,
                         ),
                         const SizedBox(height: 16),
                         _label('PASSWORD'),
                         TextFormField(
-                          controller: _passwordController,
+                          controller: _passCtrl,
                           obscureText: _obscure,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
-                          decoration: _inputDeco('••••••••').copyWith(
+                          decoration: _deco('••••••••').copyWith(
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscure
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
-                                color: const Color(0xFF4A6B82),
+                                color: _textHint,
                                 size: 18,
                               ),
                               onPressed: () =>
@@ -184,9 +183,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty)
+                            if (v?.isEmpty ?? true)
                               return 'Please enter a password';
-                            if (v.length < 6) return 'Minimum 6 characters';
+                            if (v!.length < 6) return 'Minimum 6 characters';
                             return null;
                           },
                         ),
@@ -197,27 +196,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               value: _agreed,
                               onChanged: (v) => setState(() => _agreed = v!),
                               checkColor: Colors.white,
-                              activeColor: const Color(0xFF00B4D8),
-                              side: const BorderSide(color: Color(0xFF4A6B82)),
+                              activeColor: _primary,
+                              side: const BorderSide(color: _textHint),
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                             ),
                             RichText(
                               text: const TextSpan(
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF7AB8CC),
-                                ),
+                                style: TextStyle(fontSize: 12, color: _textSub),
                                 children: [
                                   TextSpan(text: 'I agree to the '),
                                   TextSpan(
                                     text: 'Terms of Service',
-                                    style: TextStyle(color: Color(0xFF00B4D8)),
+                                    style: TextStyle(color: _primary),
                                   ),
                                   TextSpan(text: ' and '),
                                   TextSpan(
                                     text: 'Privacy Policy',
-                                    style: TextStyle(color: Color(0xFF00B4D8)),
+                                    style: TextStyle(color: _primary),
                                   ),
                                 ],
                               ),
@@ -229,18 +225,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              if (_formKey.currentState!.validate()) {
-                                if (!_agreed) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please agree to the terms',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                              }
+                              if (_formKey.currentState!.validate() &&
+                                  _agreed) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const DashboardScreen2(),
+                                  ),
+                                );
+                              } else if (!_agreed)
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please agree to the terms'),
+                                  ),
+                                );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1A3A5C),
@@ -262,19 +260,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         const SizedBox(height: 20),
                         const Row(
                           children: [
-                            Expanded(child: Divider(color: Color(0xFF1E3A5C))),
+                            Expanded(child: Divider(color: _border)),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
                                 'OR CONTINUE WITH',
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: Color(0xFF4A6B82),
+                                  color: _textHint,
                                   letterSpacing: 1,
                                 ),
                               ),
                             ),
-                            Expanded(child: Divider(color: Color(0xFF1E3A5C))),
+                            Expanded(child: Divider(color: _border)),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -294,10 +292,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     children: [
                       const Text(
                         'Already have an account? ',
-                        style: TextStyle(
-                          color: Color(0xFF7AB8CC),
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: _textSub, fontSize: 13),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.push(
@@ -309,7 +304,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: const Text(
                           'Log in',
                           style: TextStyle(
-                            color: Color(0xFF00B4D8),
+                            color: _primary,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
