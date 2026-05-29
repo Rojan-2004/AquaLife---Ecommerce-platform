@@ -1,6 +1,13 @@
-import 'package:aqua_life/views/dashboard_user_view.dart';
+import 'package:aqua_life/views/bottoms_screen/dashboard_screens_2.dart';
 import 'package:aqua_life/views/sign_up_user_view.dart';
 import 'package:flutter/material.dart';
+
+const _primary = Color(0xFF00B4D8);
+const _border = Color(0xFF1E3A5C);
+const _inputBg = Color(0xFF0D1F35);
+const _textSub = Color(0xFF7AB8CC);
+const _textHint = Color(0xFF4A6B82);
+const _cardBg = Color(0xFF112240);
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,48 +17,39 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscure = true;
-  bool _remember = false;
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  bool _obscure = true, _remember = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
     super.dispose();
   }
 
-  InputDecoration _inputDeco(String hint, IconData icon) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: Color(0xFF4A6B82)),
-    prefixIcon: Icon(icon, color: const Color(0xFF4A6B82), size: 18),
-    filled: true,
-    fillColor: const Color(0xFF0D1F35),
-    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF1E3A5C)),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF1E3A5C)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFF00B4D8)),
-    ),
+  OutlineInputBorder _ob(bool focus) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(10),
+    borderSide: BorderSide(color: focus ? _primary : _border),
   );
 
-  Widget _label(String text) => Padding(
+  InputDecoration _deco(String hint, [IconData? icon]) => InputDecoration(
+    hintText: hint,
+    hintStyle: const TextStyle(color: _textHint),
+    prefixIcon: icon != null ? Icon(icon, color: _textHint, size: 18) : null,
+    filled: true,
+    fillColor: _inputBg,
+    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+    border: _ob(false),
+    enabledBorder: _ob(false),
+    focusedBorder: _ob(true),
+  );
+
+  Widget _label(String t) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: Text(
-      text,
-      style: const TextStyle(
-        fontSize: 11,
-        color: Color(0xFF7AB8CC),
-        letterSpacing: 1,
-      ),
+      t,
+      style: const TextStyle(fontSize: 11, color: _textSub, letterSpacing: 1),
     ),
   );
 
@@ -65,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 12),
-        side: const BorderSide(color: Color(0xFF1E3A5C)),
+        side: const BorderSide(color: _border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     ),
@@ -98,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: const Color(0xFF1A3A5C),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00B4D8).withOpacity(0.4),
+                          color: _primary.withOpacity(0.4),
                           blurRadius: 20,
                           spreadRadius: 2,
                         ),
@@ -106,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: const Icon(
                       Icons.water_drop,
-                      color: Color(0xFF00B4D8),
+                      color: _primary,
                       size: 30,
                     ),
                   ),
@@ -122,15 +120,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const Text(
                     'Sustainable Aquatic Ecosystems',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF7AB8CC)),
+                    style: TextStyle(fontSize: 13, color: _textSub),
                   ),
                   const SizedBox(height: 40),
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF112240).withOpacity(0.8),
+                      color: _cardBg.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF1E3A5C)),
+                      border: Border.all(color: _border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,24 +144,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 4),
                         const Text(
                           'Please enter your details to log in.',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF7AB8CC),
-                          ),
+                          style: TextStyle(fontSize: 13, color: _textSub),
                         ),
                         const SizedBox(height: 24),
                         _label('EMAIL ADDRESS'),
                         TextFormField(
-                          controller: _emailController,
+                          controller: _emailCtrl,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
-                          decoration: _inputDeco(
+                          decoration: _deco(
                             'name@example.com',
                             Icons.mail_outline,
                           ),
-                          validator: (v) => (v == null || v.isEmpty)
+                          validator: (v) => (v?.isEmpty ?? true)
                               ? 'Please enter your email'
                               : null,
                         ),
@@ -181,73 +176,65 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               child: const Text(
                                 'Forgot?',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF00B4D8),
-                                ),
+                                style: TextStyle(fontSize: 12, color: _primary),
                               ),
                             ),
                           ],
                         ),
                         TextFormField(
-                          controller: _passwordController,
+                          controller: _passCtrl,
                           obscureText: _obscure,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                           ),
-                          decoration: _inputDeco('••••••••', Icons.lock_outline)
+                          decoration: _deco('••••••••', Icons.lock_outline)
                               .copyWith(
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscure
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
-                                    color: const Color(0xFF4A6B82),
+                                    color: _textHint,
                                     size: 18,
                                   ),
                                   onPressed: () =>
                                       setState(() => _obscure = !_obscure),
                                 ),
                               ),
-                          validator: (v) => (v == null || v.isEmpty)
+                          validator: (v) => (v?.isEmpty ?? true)
                               ? 'Please enter your password'
                               : null,
                         ),
-                        const SizedBox(height: 8),
                         Row(
                           children: [
                             Checkbox(
                               value: _remember,
                               onChanged: (v) => setState(() => _remember = v!),
                               checkColor: Colors.white,
-                              activeColor: const Color(0xFF00B4D8),
-                              side: const BorderSide(color: Color(0xFF4A6B82)),
+                              activeColor: _primary,
+                              side: const BorderSide(color: _textHint),
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                             ),
                             const Text(
                               'Remember for 30 days',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF7AB8CC),
-                              ),
+                              style: TextStyle(fontSize: 13, color: _textSub),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              if (_formKey.currentState!.validate()) {
+                              if (_formKey.currentState!.validate())
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const HomeScreen(),
+                                    builder: (_) => const DashboardScreen2(),
                                   ),
                                 );
-                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1A3A5C),
@@ -269,19 +256,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 20),
                         const Row(
                           children: [
-                            Expanded(child: Divider(color: Color(0xFF1E3A5C))),
+                            Expanded(child: Divider(color: _border)),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
                                 'OR CONTINUE WITH',
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: Color(0xFF4A6B82),
+                                  color: _textHint,
                                   letterSpacing: 1,
                                 ),
                               ),
                             ),
-                            Expanded(child: Divider(color: Color(0xFF1E3A5C))),
+                            Expanded(child: Divider(color: _border)),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -301,10 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const Text(
                         "Don't have an account? ",
-                        style: TextStyle(
-                          color: Color(0xFF7AB8CC),
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: _textSub, fontSize: 13),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.push(
@@ -316,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: const Text(
                           'Create Account',
                           style: TextStyle(
-                            color: Color(0xFF00B4D8),
+                            color: _primary,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),

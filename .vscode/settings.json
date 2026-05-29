@@ -1,0 +1,8 @@
+{
+  "dart.projectSearchDepth": 5,
+  "dart.flutterSdkPath": "/Users/rojanmainali/development/flutter",
+  "search.exclude": {
+    "**/.dart_tool": true,
+    "**/build": true
+  }
+}
