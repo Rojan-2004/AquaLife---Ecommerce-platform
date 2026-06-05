@@ -1,33 +1,41 @@
 import 'package:flutter/material.dart';
-import 'app_theme.dart';
+import 'package:aqua_life/views/bottoms_screen/app_theme.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _appBar(),
-            const SizedBox(height: 16),
-            _banner(),
-            const SizedBox(height: 16),
-            _aiCard(),
-            const SizedBox(height: 24),
-            _categoriesSection(),
-            const SizedBox(height: 24),
-            _expertsChoice(),
-          ],
+    return Scaffold(
+      backgroundColor: kBg,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: kAccent,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildAppBar(),
+              const SizedBox(height: 16),
+              _buildBanner(),
+              const SizedBox(height: 16),
+              _buildAICard(),
+              const SizedBox(height: 24),
+              _buildCategoriesSection(),
+              const SizedBox(height: 24),
+              _buildExpertsChoice(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _appBar() {
+  Widget _buildAppBar() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -64,11 +72,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _banner() {
+  Widget _buildBanner() {
     return Container(
+      height: 200,
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 160),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
@@ -76,69 +83,91 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Nemo (Clownfish)\nStarter Kits',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Everything you need for your first reef friend.',
-                  style: TextStyle(color: kSub, fontSize: 12),
-                ),
-                const SizedBox(height: 12),
-                Row(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'Rs. 14,999',
+                      'Nemo (Clownfish)\nStarter Kits',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        height: 1.15,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kAccent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Everything you need for your first reef friend.',
+                      style: TextStyle(color: kSub, fontSize: 11, height: 1.2),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        const Text(
+                          'Rs. 14,999',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                        ElevatedButton(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
+                            minimumSize: const Size(0, 32),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: const Text(
+                            'Shop Now',
+                            style: TextStyle(fontSize: 12),
+                          ),
                         ),
-                      ),
-                      child: const Text(
-                        'Shop Now',
-                        style: TextStyle(fontSize: 12),
-                      ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
           ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              width: 120,
-              height: 120,
-              child: Image.asset(
-                'assets/images/clownfish.png',
-                fit: BoxFit.cover,
+            borderRadius: const BorderRadius.horizontal(
+              right: Radius.circular(16),
+            ),
+            child: Image.asset(
+              'assets/images/clownfish.png',
+              width: 110,
+              height: 200,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 110,
+                height: 200,
+                color: kCard,
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.image_outlined,
+                  color: kSub,
+                  size: 32,
+                ),
               ),
             ),
           ),
@@ -147,7 +176,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _aiCard() {
+  Widget _buildAICard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -204,13 +233,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _categoriesSection() {
-    final cats = [
+  Widget _buildCategoriesSection() {
+    final categories = [
       {'icon': Icons.set_meal, 'name': 'Fish', 'sub': '2.4k Species'},
       {'icon': Icons.restaurant, 'name': 'Food', 'sub': '450 Products'},
       {'icon': Icons.grass, 'name': 'Plants', 'sub': '120 Variations'},
       {'icon': Icons.settings, 'name': 'Equipment', 'sub': 'High Precision'},
     ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,48 +281,46 @@ class HomeScreen extends StatelessWidget {
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
           childAspectRatio: 2,
-          children: cats
-              .map(
-                (c) => Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: kCard,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: kBorder),
-                  ),
-                  child: Row(
+          children: categories.map((c) {
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: kCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: kBorder),
+              ),
+              child: Row(
+                children: [
+                  Icon(c['icon'] as IconData, color: kAccent, size: 24),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(c['icon'] as IconData, color: kAccent, size: 24),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            c['name'] as String,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            c['sub'] as String,
-                            style: const TextStyle(color: kSub, fontSize: 11),
-                          ),
-                        ],
+                      Text(
+                        c['name'] as String,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        c['sub'] as String,
+                        style: const TextStyle(color: kSub, fontSize: 11),
                       ),
                     ],
                   ),
-                ),
-              )
-              .toList(),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
   }
 
-  Widget _expertsChoice() {
+  Widget _buildExpertsChoice() {
     final products = [
       {
         'name': 'Neon Tetra Bundle',
@@ -307,6 +335,7 @@ class HomeScreen extends StatelessWidget {
         'image': 'assets/images/coral.png',
       },
     ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -325,8 +354,8 @@ class HomeScreen extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemCount: products.length,
-            itemBuilder: (_, i) {
-              final p = products[i];
+            itemBuilder: (context, index) {
+              final p = products[index];
               return Container(
                 width: 160,
                 decoration: BoxDecoration(
@@ -349,6 +378,14 @@ class HomeScreen extends StatelessWidget {
                               width: double.infinity,
                               height: double.infinity,
                               fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: kInput,
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.image_outlined,
+                                  color: kSub,
+                                ),
+                              ),
                             ),
                           ),
                           Positioned(

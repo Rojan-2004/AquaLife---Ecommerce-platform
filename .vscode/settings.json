@@ -4,5 +4,8 @@
   "search.exclude": {
     "**/.dart_tool": true,
     "**/build": true
-  }
+  },
+  "java.project.sourcePaths": [
+    "lib/core/config"
+  ]
 }
