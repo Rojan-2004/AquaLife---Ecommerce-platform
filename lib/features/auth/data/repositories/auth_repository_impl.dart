@@ -79,7 +79,6 @@ class AuthRepository implements IAuthRepository {
           phoneNumber: user.phoneNumber,
           username: user.username,
           password: user.password,
-          batchId: user.batchId,
           profilePicture: user.profilePicture,
         );
         await _authDataSource.register(authModel);
@@ -118,7 +117,6 @@ class AuthRepository implements IAuthRepository {
             username: apiModel.username,
             password: password,
             profilePicture: apiModel.profilePicture,
-            batchId: apiModel.batchId,
           );
           await _authDataSource.register(authModel);
 

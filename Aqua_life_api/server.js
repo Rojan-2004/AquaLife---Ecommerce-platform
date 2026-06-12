@@ -14,6 +14,7 @@ const app = express();
 
 // Load environment variables
 dotenv.config({ path: "./config/config.env", quiet: true });
+dotenv.config({ path: "./.env", quiet: true });
 
 // Connect to the database
 connectDB();
@@ -129,32 +130,15 @@ app.use(limiter); // Apply rate limiting to all requests
 app.use(express.static(path.join(__dirname, "public"))); // Serve static files
 
 // Routes
-const batchRoutes = require("./routes/batch_route");
-app.use("/api/v1/batches", batchRoutes);
+const { register, login, getMe, logout } = require("./controllers/auth_controller");
+const { protect } = require("./middleware/auth");
 
-const categoryRoutes = require("./routes/category_route");
-app.use("/api/v1/categories", categoryRoutes);
+app.post("/api/v1/auth/register", registerLimiter, register);
+app.post("/api/v1/auth/login", authLimiter, login);
+app.get("/api/v1/auth/me", protect, getMe);
+app.post("/api/v1/auth/logout", protect, logout);
 
-// Apply stricter rate limiting to login + registration endpoints
-const studentRoutes = require("./routes/student_route");
-app.use("/api/v1/students/login", authLimiter);
-app.post("/api/v1/students", registerLimiter, (req, res, next) => next());
-app.use("/api/v1/students", studentRoutes);
-
-const itemRoutes = require("./routes/item_route");
-app.use("/api/v1/items", itemRoutes);
-
-const commentRoutes = require("./routes/comment_route");
-app.use("/api/v1/comments", commentRoutes);
-
-// const userRoutes = require("./routes/userRoutes");
-// const productRoutes = require("./routes/productRoutes");
-// const orderRoutes = require("./routes/orderRoutes");
-// const paymentRoutes = require("./routes/paymentRoutes");
-// app.use("/api/v1/users", userRoutes);
-// app.use("/api/v1/products", productRoutes);
-// app.use("/api/v1/orders", orderRoutes);
-// app.use("/api/v1/payments", paymentRoutes);
+// Product, category, cart, and order APIs can be added here for ecommerce.
 
 // Error handling middleware
 app.use(errorHandler);

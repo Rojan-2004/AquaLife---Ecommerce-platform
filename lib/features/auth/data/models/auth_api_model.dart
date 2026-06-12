@@ -7,7 +7,6 @@ class AuthApiModel {
   final String? phoneNumber;
   final String username;
   final String? password;
-  final String? batchId;
   final String? profilePicture;
   final String? token;
 
@@ -18,7 +17,6 @@ class AuthApiModel {
     this.phoneNumber,
     required this.username,
     this.password,
-    this.batchId,
     this.profilePicture,
     this.token,
   });
@@ -26,25 +24,80 @@ class AuthApiModel {
   Map<String, dynamic> toJson() {
     return {
       'name': fullName,
+      'fullName': fullName,
       'email': email,
       'phoneNumber': phoneNumber,
       'username': username,
       'password': password,
-      'batchId': batchId,
       'profilePicture': profilePicture,
     };
   }
 
-  factory AuthApiModel.fromJson(Map<String, dynamic> json) {
+  factory AuthApiModel.fromJson(dynamic json) {
+    final root = _requireMap(json, context: 'Auth API response');
+    final dataValue = root['data'];
+    final data = dataValue == null
+        ? root
+        : _requireMap(dataValue, context: 'Auth API response.data');
+
     return AuthApiModel(
-      id: json['_id'] ?? json['id'],
-      fullName: json['name'],
-      email: json['email'],
-      phoneNumber: json['phoneNumber'],
-      username: json['username'],
-      batchId: json['batchId'],
-      profilePicture: json['profilePicture'],
-      token: json['token'],
+      id: _asStringOrNull(data['_id'] ?? data['id'], name: 'id'),
+      fullName: _asString(
+        value: data['fullName'] ?? data['name'],
+        name: 'fullName',
+        defaultValue: 'Aqua User',
+      ),
+      email: _asString(value: data['email'], name: 'email', defaultValue: ''),
+      phoneNumber: _asStringOrNull(data['phoneNumber'], name: 'phoneNumber'),
+      username: _asString(
+        value: data['username'],
+        name: 'username',
+        defaultValue: '',
+      ),
+      profilePicture: _asStringOrNull(
+        data['profilePicture'],
+        name: 'profilePicture',
+      ),
+      token: _asStringOrNull(root['token'] ?? data['token'], name: 'token'),
+    );
+  }
+
+  static Map<String, dynamic> _requireMap(
+    dynamic value, {
+    required String context,
+  }) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map(
+        (key, innerValue) => MapEntry(key.toString(), innerValue),
+      );
+    }
+
+    final actualType = value == null ? 'null' : value.runtimeType.toString();
+    throw FormatException('$context must be a Map, but got $actualType.');
+  }
+
+  static String? _asStringOrNull(dynamic value, {required String name}) {
+    if (value == null) return null;
+    if (value is String) return value;
+    if (value is num || value is bool) return value.toString();
+
+    throw FormatException(
+      'Expected "$name" to be a String, but got ${value.runtimeType}.',
+    );
+  }
+
+  static String _asString({
+    dynamic value,
+    required String name,
+    required String defaultValue,
+  }) {
+    if (value == null) return defaultValue;
+    if (value is String) return value;
+    if (value is num || value is bool) return value.toString();
+
+    throw FormatException(
+      'Expected "$name" to be a String, but got ${value.runtimeType}.',
     );
   }
 
@@ -57,7 +110,6 @@ class AuthApiModel {
       username: username,
       password: password,
       profilePicture: profilePicture,
-      batchId: batchId,
     );
   }
 
@@ -68,7 +120,6 @@ class AuthApiModel {
       phoneNumber: entity.phoneNumber,
       password: entity.password,
       username: entity.username,
-      batchId: entity.batchId,
       profilePicture: entity.profilePicture,
     );
   }

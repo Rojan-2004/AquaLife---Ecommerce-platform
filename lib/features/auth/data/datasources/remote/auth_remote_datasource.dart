@@ -18,17 +18,17 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
   Future<AuthApiModel?> login(String email, String password) async {
     try {
       final response = await _apiClient.post(
-        ApiEndpoints.studentLogin,
+        ApiEndpoints.authLogin,
         data: {'email': email, 'password': password},
       );
       if (response.statusCode == 200 && response.data != null) {
-        final Map<String, dynamic> data = Map<String, dynamic>.from(response.data['data'] ?? response.data);
-        data['token'] = response.data['token'];
-        return AuthApiModel.fromJson(data);
+        return AuthApiModel.fromJson(response.data);
       }
       return null;
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Login failed');
+      throw Exception(
+        _messageFromResponseData(e.response?.data, 'Login failed'),
+      );
     } catch (e) {
       throw Exception('Login failed: $e');
     }
@@ -38,19 +38,32 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
   Future<AuthApiModel?> register(AuthApiModel model) async {
     try {
       final response = await _apiClient.post(
-        ApiEndpoints.studentRegister,
+        ApiEndpoints.authRegister,
         data: model.toJson(),
       );
       if (response.statusCode == 201 && response.data != null) {
-        return AuthApiModel.fromJson(response.data['data'] ?? response.data);
+        return AuthApiModel.fromJson(response.data);
       }
       return null;
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Registration failed');
+      throw Exception(
+        _messageFromResponseData(e.response?.data, 'Registration failed'),
+      );
     } catch (e) {
       throw Exception('Registration failed: $e');
     }
   }
+}
+
+String _messageFromResponseData(dynamic data, String fallback) {
+  if (data is Map) {
+    final message = data['message'];
+    if (message is String) return message;
+  }
+
+  if (data is String && data.trim().isNotEmpty) return data;
+
+  return fallback;
 }
 
 final authRemoteDatasourceProvider = Provider<IAuthRemoteDataSource>((ref) {

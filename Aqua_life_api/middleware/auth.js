@@ -1,7 +1,7 @@
 //PROTECT THE MIDDLEWARE
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("./async");
-const User = require("../models/student_model");
+const User = require("../models/user_model");
 
 //Protect routes
 exports.protect = asyncHandler(async (req, res, next) => {
@@ -28,6 +28,9 @@ exports.protect = asyncHandler(async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     // console.log(decoded);
     req.user = await User.findById(decoded.id);
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized to access this route" });
+    }
     next();
   } catch (err) {
     // return next(new ErrorResponse('Not authorized to access this route', 401));

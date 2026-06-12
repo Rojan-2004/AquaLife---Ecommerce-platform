@@ -28,9 +28,6 @@ class AuthHiveModel extends HiveObject {
   @HiveField(6)
   final String? profilePicture;
 
-  @HiveField(7)
-  final String? batchId;
-
   AuthHiveModel({
     String? authId,
     required this.fullName,
@@ -39,7 +36,6 @@ class AuthHiveModel extends HiveObject {
     required this.username,
     required this.password,
     this.profilePicture,
-    this.batchId,
   }) : authId = authId ?? const Uuid().v4();
 
   factory AuthHiveModel.fromEntity(AuthEntity entity) {
@@ -51,7 +47,6 @@ class AuthHiveModel extends HiveObject {
       username: entity.username,
       password: entity.password,
       profilePicture: entity.profilePicture,
-      batchId: entity.batchId,
     );
   }
 
@@ -64,7 +59,6 @@ class AuthHiveModel extends HiveObject {
       username: username,
       password: password,
       profilePicture: profilePicture,
-      batchId: batchId,
     );
   }
 

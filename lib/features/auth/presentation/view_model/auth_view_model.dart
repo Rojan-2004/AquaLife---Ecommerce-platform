@@ -45,7 +45,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
       username: entity.username,
       password: entity.password ?? '',
       phoneNumber: entity.phoneNumber,
-      batchId: entity.batchId,
     );
     final result = await _registerUseCase(params);
 

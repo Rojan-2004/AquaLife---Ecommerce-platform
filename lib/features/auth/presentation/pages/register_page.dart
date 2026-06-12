@@ -18,18 +18,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  String _selectedCountryCode = '+977';
-
-  final List<Map<String, String>> _countryCodes = [
-    {'code': '+977', 'name': 'Nepal', 'flag': '🇳🇵'},
-    {'code': '+91', 'name': 'India', 'flag': '🇮🇳'},
-    {'code': '+1', 'name': 'USA', 'flag': '🇺🇸'},
-    {'code': '+44', 'name': 'UK', 'flag': '🇬🇧'},
-    {'code': '+86', 'name': 'China', 'flag': '🇨🇳'},
-  ];
 
   @override
   void dispose() {
@@ -37,12 +27,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _nameController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 360;
+    final authState = ref.watch(authViewModelProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A1628),
       body: Container(
@@ -50,24 +42,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0A1628),
-              Color(0xFF0D2137),
-            ],
+            colors: [Color(0xFF0A1628), Color(0xFF0D2137)],
             stops: [0.0, 0.4],
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 18 : 24,
+              vertical: compact ? 18 : 24,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _buildLogo(),
-                const SizedBox(height: 24),
+                _buildLogo(compact),
+                SizedBox(height: compact ? 12 : 24),
                 _buildBackButton(),
-                const SizedBox(height: 24),
-                _buildSignupForm(),
+                SizedBox(height: compact ? 12 : 24),
+                _buildSignupForm(compact, authState.isLoading),
                 const SizedBox(height: 20),
               ],
             ),
@@ -92,12 +84,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 
-  Widget _buildLogo() {
+  Widget _buildLogo(bool compact) {
     return Column(
       children: [
         Container(
-          width: 75,
-          height: 75,
+          width: compact ? 64 : 75,
+          height: compact ? 64 : 75,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: const Color(0xFF112240),
@@ -105,24 +97,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             boxShadow: [
               BoxShadow(
                 color: AppColors.primaryBlue.withValues(alpha: 0.25),
-                blurRadius: 20,
-                spreadRadius: 4,
+                blurRadius: compact ? 14 : 20,
+                spreadRadius: compact ? 2 : 4,
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.water_drop,
             color: AppColors.primaryBlue,
-            size: 40,
+            size: compact ? 34 : 40,
           ),
         ),
-        const SizedBox(height: 12),
-        const Text(
+        SizedBox(height: compact ? 8 : 12),
+        Text(
           'AQUALIFE',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: compact ? 20 : 24,
             fontWeight: FontWeight.bold,
-            letterSpacing: 3.0,
+            letterSpacing: compact ? 2 : 3,
             color: Colors.white,
           ),
         ),
@@ -130,7 +122,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 
-  Widget _buildSignupForm() {
+  Widget _buildSignupForm(bool compact, bool isLoading) {
     return Form(
       key: _signupFormKey,
       child: Column(
@@ -140,79 +132,123 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             controller: _nameController,
             hint: 'Enter your full name',
             icon: Icons.person_outlined,
+            compact: compact,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: compact ? 12 : 16),
           _buildTextField(
             controller: _emailController,
             hint: 'Enter your email',
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
+            compact: compact,
+            textCapitalization: TextCapitalization.none,
+            validator: (value) {
+              final email = value?.trim() ?? '';
+              if (email.isEmpty) return 'This field is required';
+              if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+                return 'Please enter a valid email';
+              }
+              final username = email.split('@').first.trim();
+              if (username.length < 3) {
+                return 'Use an email with at least 3 characters before @';
+              }
+              return null;
+            },
           ),
-          const SizedBox(height: 16),
-          _buildPhoneField(),
-          const SizedBox(height: 16),
+          SizedBox(height: compact ? 12 : 16),
           _buildTextField(
             controller: _passwordController,
             hint: 'Enter your password',
             icon: Icons.lock_outlined,
             isPassword: true,
             isPasswordVisible: _isPasswordVisible,
+            compact: compact,
+            textInputAction: TextInputAction.next,
+            validator: (value) {
+              final password = value ?? '';
+              if (password.isEmpty) return 'This field is required';
+              if (password.length < 6) {
+                return 'Password must be at least 6 characters';
+              }
+              return null;
+            },
             onTogglePassword: () {
               setState(() => _isPasswordVisible = !_isPasswordVisible);
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: compact ? 12 : 16),
           _buildTextField(
             controller: _confirmPasswordController,
             hint: 'Confirm your password',
             icon: Icons.lock_outlined,
             isPassword: true,
             isPasswordVisible: _isConfirmPasswordVisible,
+            compact: compact,
+            textInputAction: TextInputAction.done,
+            validator: (value) {
+              if ((value ?? '').isEmpty) return 'This field is required';
+              if (value != _passwordController.text) {
+                return 'Passwords do not match';
+              }
+              return null;
+            },
             onTogglePassword: () {
-              setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
+              setState(
+                () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
+              );
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: compact ? 18 : 24),
           SizedBox(
             width: double.infinity,
-            child: _buildSubmitButton('Sign Up', () async {
-              if (_signupFormKey.currentState!.validate()) {
-                final authViewModel = ref.read(authViewModelProvider.notifier);
-                await authViewModel.register(
-                  AuthEntity(
-                    fullName: _nameController.text,
-                    email: _emailController.text,
-                    username: _emailController.text.split('@')[0],
-                    password: _passwordController.text,
-                    phoneNumber: '$_selectedCountryCode${_phoneController.text}',
+            child: _buildSubmitButton('Sign Up', compact, isLoading, () async {
+              if (isLoading) return;
+              if (!_signupFormKey.currentState!.validate()) return;
+
+              final email = _emailController.text.trim();
+              final fullName = _nameController.text.trim();
+              final password = _passwordController.text;
+              final username = email.split('@').first.trim();
+
+              final authViewModel = ref.read(authViewModelProvider.notifier);
+              await authViewModel.register(
+                AuthEntity(
+                  fullName: fullName,
+                  email: email,
+                  username: username,
+                  password: password,
+                ),
+              );
+
+              if (!mounted) return;
+
+              final authState = ref.read(authViewModelProvider);
+              if (authState.isSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF112240),
+                    content: Text(
+                      'Registration successful! Please login.',
+                      style: const TextStyle(color: Colors.greenAccent),
+                    ),
                   ),
                 );
-
-                final authState = ref.read(authViewModelProvider);
-                if (authState.isSuccess && mounted) {
-                  ref.read(authViewModelProvider.notifier).resetState();
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginPage(),
+                ref.read(authViewModelProvider.notifier).resetState();
+                if (!mounted) return;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              } else if (authState.error != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF112240),
+                    content: Text(
+                      authState.error!,
+                      style: const TextStyle(color: Colors.redAccent),
                     ),
-                  );
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        backgroundColor: Color(0xFF112240),
-                        content: Text('Registration successful! Please login.', style: TextStyle(color: Colors.greenAccent)),
-                      ),
-                    );
-                  }
-                } else if (authState.error != null && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: const Color(0xFF112240),
-                      content: Text(authState.error!, style: const TextStyle(color: Colors.redAccent)),
-                    ),
-                  );
-                }
+                  ),
+                );
               }
             }),
           ),
@@ -221,85 +257,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 
-  Widget _buildPhoneField() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: constraints.maxWidth * 0.32,
-                minWidth: 80,
-              ),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  canvasColor: const Color(0xFF112240),
-                ),
-                child: DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  dropdownColor: const Color(0xFF112240),
-                  initialValue: _selectedCountryCode,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.transparent,
-                    contentPadding: const EdgeInsets.only(left: 8, right: 0, top: 14, bottom: 14),
-                    isDense: true,
-                  ),
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  items: _countryCodes.map((country) {
-                    return DropdownMenuItem<String>(
-                      value: country['code'],
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            country['flag']!,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            country['code']!,
-                            style: const TextStyle(fontSize: 13, color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCountryCode = value!;
-                    });
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildTextField(
-                controller: _phoneController,
-                hint: 'Phone Number',
-                icon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
     TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    TextCapitalization textCapitalization = TextCapitalization.none,
     bool isPassword = false,
     bool isPasswordVisible = false,
+    bool compact = false,
+    String? Function(String?)? validator,
     VoidCallback? onTogglePassword,
   }) {
     return Container(
@@ -311,19 +279,31 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        textCapitalization: textCapitalization,
+        autocorrect: false,
+        enableSuggestions: false,
         obscureText: isPassword && !isPasswordVisible,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: Colors.white, fontSize: compact ? 14 : 15),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: Color(0xFF4A6B82)),
-          prefixIcon: Icon(icon, color: const Color(0xFF7AB8CC)),
+          prefixIcon: SizedBox(
+            width: compact ? 36 : 40,
+            child: Icon(icon, color: const Color(0xFF7AB8CC)),
+          ),
           suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                    color: const Color(0xFF7AB8CC),
+              ? SizedBox(
+                  width: compact ? 36 : 40,
+                  child: IconButton(
+                    icon: Icon(
+                      isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: const Color(0xFF7AB8CC),
+                    ),
+                    onPressed: onTogglePassword,
                   ),
-                  onPressed: onTogglePassword,
                 )
               : null,
           border: OutlineInputBorder(
@@ -332,30 +312,34 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           ),
           filled: true,
           fillColor: Colors.transparent,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: compact ? 11 : 14,
+          ),
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'This field is required';
-          }
-          if (hint.contains('email') && !value.contains('@')) {
-            return 'Please enter a valid email';
-          }
-          if (hint.contains('password') && value.length < 6) {
-            return 'Password must be at least 6 characters';
-          }
-          return null;
-        },
+        validator:
+            validator ??
+            (value) {
+              if (value == null || value.isEmpty) {
+                return 'This field is required';
+              }
+              return null;
+            },
       ),
     );
   }
 
-  Widget _buildSubmitButton(String text, VoidCallback onPressed) {
+  Widget _buildSubmitButton(
+    String text,
+    bool compact,
+    bool isLoading,
+    VoidCallback onPressed,
+  ) {
     return SizedBox(
       width: double.infinity,
-      height: 55,
+      height: compact ? 50 : 55,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1A3A5C),
           foregroundColor: AppColors.primaryBlue,
@@ -365,13 +349,22 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           ),
           elevation: 0,
         ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                text,
+                style: TextStyle(
+                  fontSize: compact ? 16 : 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
   }
