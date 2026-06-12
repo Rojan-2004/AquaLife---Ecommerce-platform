@@ -17,25 +17,25 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final List<Map<String, dynamic>> _onboardingData = [
     {
       "icon": Icons.water_drop,
-      "title": "Find Friends & Get Inspiration",
-      "description": "Connect with individuals who share your passions and get inspired by diverse perspectives from around the globe.",
+      "title": "Discover Aquatic Life",
+      "description": "Explore a vast collection of fish, plants, and aquarium supplies. Find everything you need for your underwater world.",
     },
     {
-      "icon": Icons.auto_awesome,
-      "title": "Meet Awesome People & Enjoy yourself",
-      "description": "Build meaningful relationships, share your thoughts freely, and enjoy a safe space for open conversations.",
+      "icon": Icons.explore_outlined,
+      "title": "Aquarium Community",
+      "description": "Connect with fellow aquarists, share photos, get expert advice, and join aquarium enthusiast communities worldwide.",
     },
     {
-      "icon": Icons.groups_outlined,
-      "title": "Hangout with Friends",
-      "description": "Stay in touch with your favorite people through seamless interactions, comments, and real-time engagement.",
+      "icon": Icons.shopping_cart_outlined,
+      "title": "Shop & Care Guide",
+      "description": "Access curated aquariums, equipment, and maintenance guides to keep your aquatic pets thriving.",
     },
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628), // Deep dark aquatic background
+      backgroundColor: const Color(0xFF0A1628),
       body: SafeArea(
         child: Column(
           children: [
@@ -50,30 +50,52 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 itemCount: _onboardingData.length,
                 itemBuilder: (context, index) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 30.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Beautiful glowing icon container instead of static image asset
                         Container(
-                          width: 200,
-                          height: 200,
+                          width: 220,
+                          height: 220,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFF112240),
-                            border: Border.all(color: const Color(0xFF1E3A5C), width: 2),
+                            color: const Color(0xFF0D1F35),
+                            border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.5), width: 2),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primaryBlue.withValues(alpha: 0.3),
-                                blurRadius: 40,
-                                spreadRadius: 5,
+                                color: AppColors.primaryBlue.withValues(alpha: 0.4),
+                                blurRadius: 50,
+                                spreadRadius: 8,
                               ),
                             ],
                           ),
-                          child: Icon(
-                            _onboardingData[index]["icon"] as IconData,
-                            size: 90,
-                            color: AppColors.primaryBlue,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Icon(
+                                _onboardingData[index]["icon"] as IconData,
+                                size: 100,
+                                color: AppColors.primaryBlue,
+                              ),
+                              Positioned(
+                                top: 40,
+                                right: 50,
+                                child: Icon(
+                                  Icons.bubble_chart,
+                                  size: 30,
+                                  color: const Color(0xFF1E3A5C),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 50,
+                                left: 40,
+                                child: Icon(
+                                  Icons.bubble_chart,
+                                  size: 20,
+                                  color: const Color(0xFF1E3A5C),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 60),
@@ -81,9 +103,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           _onboardingData[index]["title"]!,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 22,
+                            fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
+                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -91,9 +114,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           _onboardingData[index]["description"]!,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 16,
                             color: Color(0xFF7AB8CC),
-                            height: 1.5,
+                            height: 1.6,
                           ),
                         ),
                       ],
@@ -109,7 +132,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 (index) => buildDot(index, context),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 50),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40.0),
               child: Row(
@@ -117,7 +140,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 children: [
                   TextButton(
                     onPressed: () {
-                      ref.read(onboardingViewModelProvider.notifier).completeOnboarding(context, initialLoginIndex: 0);
+                      ref.read(onboardingViewModelProvider.notifier).completeOnboarding(context);
                     },
                     child: const Text(
                       "Skip",
@@ -132,11 +155,11 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                         borderRadius: BorderRadius.circular(12),
                         side: const BorderSide(color: Color(0xFF1E3A5C)),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 15),
                     ),
                     onPressed: () {
                       if (_currentPage == _onboardingData.length - 1) {
-                        ref.read(onboardingViewModelProvider.notifier).completeOnboarding(context, initialLoginIndex: 1);
+                        ref.read(onboardingViewModelProvider.notifier).completeOnboarding(context);
                       } else {
                         _pageController.nextPage(
                           duration: const Duration(milliseconds: 300),
@@ -145,7 +168,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                       }
                     },
                     child: Text(
-                      _currentPage == _onboardingData.length - 1 ? "Join Now" : "Next",
+                      _currentPage == _onboardingData.length - 1 ? "Get Started" : "Next",
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -162,12 +185,19 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   Widget buildDot(int index, BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      height: 8,
-      width: _currentPage == index ? 24 : 8,
-      margin: const EdgeInsets.only(right: 5),
+      height: 10,
+      width: _currentPage == index ? 30 : 10,
+      margin: const EdgeInsets.only(right: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         color: _currentPage == index ? AppColors.primaryBlue : const Color(0xFF1E3A5C),
+        boxShadow: [
+          if (_currentPage == index)
+            BoxShadow(
+              color: AppColors.primaryBlue.withValues(alpha: 0.5),
+              blurRadius: 10,
+            ),
+        ],
       ),
     );
   }

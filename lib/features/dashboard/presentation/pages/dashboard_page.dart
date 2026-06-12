@@ -1,6 +1,6 @@
+import 'package:aqua_life/app/theme/app_theme.dart';
+import 'package:aqua_life/features/home/presentation/pages/home_page.dart';
 import 'package:flutter/material.dart';
-import 'package:aqua_life/views/bottoms_screen/app_theme.dart';
-import 'package:aqua_life/views/bottoms_screen/home_screen.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -38,10 +38,18 @@ class _DashboardPageState extends State<DashboardPage> {
       onTap: (i) => setState(() => _currentIndex = i),
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.store_outlined), label: 'Shop'),
         BottomNavigationBarItem(
-            icon: Icon(Icons.smart_toy_outlined), label: 'Assistant'),
-        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+          icon: Icon(Icons.store_outlined),
+          label: 'Shop',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.smart_toy_outlined),
+          label: 'Assistant',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          label: 'Profile',
+        ),
       ],
     );
   }

@@ -1,326 +1,430 @@
+import 'package:aqua_life/app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aqua_life/app/theme/app_colors.dart';
-import 'package:aqua_life/features/home/presentation/view_model/home_view_model.dart';
 
-class HomePage extends ConsumerWidget {
-  const HomePage({super.key});
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(homeViewModelProvider);
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              _buildPostInputSection(),
-              _buildStorySection(state.stories),
-              ...state.posts.map((post) => _buildFeedPost(
-                name: post['name'],
-                time: post['time'],
-                text: post['text'],
-                likes: post['likes'],
-                comments: post['comments'],
-                hasImage: post['hasImage'],
-              )),
-            ],
-          ),
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildAppBar(),
+            const SizedBox(height: 16),
+            _buildBanner(),
+            const SizedBox(height: 16),
+            _buildAICard(),
+            const SizedBox(height: 24),
+            _buildCategoriesSection(),
+            const SizedBox(height: 24),
+            _buildExpertsChoice(),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.water_drop,
-                    color: AppColors.primaryBlue,
-                    size: 32,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'AquaLife',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.search, size: 28, color: Colors.white),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.notifications_none, size: 28, color: Colors.white),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.near_me_outlined, size: 28, color: Colors.white),
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPostInputSection() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF112240),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: AppColors.primaryBlue.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
-        ),
-        child: Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Row(
           children: [
-            Row(
-              children: [
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Color(0xFF1A3A5C),
-                  child: Icon(Icons.person, color: AppColors.primaryBlue),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    "What's on your head?",
-                    style: TextStyle(color: const Color(0xFF7AB8CC).withValues(alpha: 0.8), fontSize: 16),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0D1F35),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF1E3A5C)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildPostOption(Icons.image, 'Image', AppColors.primaryBlue),
-                  Container(
-                    width: 1,
-                    height: 20,
-                    color: const Color(0xFF1E3A5C),
-                  ),
-                  _buildPostOption(Icons.videocam, 'Videos', AppColors.primaryBlue),
-                  Container(
-                    width: 1,
-                    height: 20,
-                    color: const Color(0xFF1E3A5C),
-                  ),
-                  _buildPostOption(Icons.auto_awesome, 'AI', AppColors.primaryBlue),
-                ],
+            Icon(Icons.water_drop, color: kAccent, size: 20),
+            SizedBox(width: 6),
+            Text(
+              'AquaLife',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPostOption(IconData icon, String label, Color color) {
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(color: Color(0xFF7AB8CC), fontWeight: FontWeight.w500)),
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.search, color: Colors.white),
+              onPressed: () {},
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.shopping_cart_outlined,
+                color: Colors.white,
+              ),
+              onPressed: () {},
+            ),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _buildStorySection(List<String> stories) {
-    return SizedBox(
-      height: 110,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: stories.length,
-        itemBuilder: (context, index) {
-          final story = stories[index];
-          final isAdd = story == 'Add';
-          return Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Column(
-              children: [
-                Container(
-                  width: 65,
-                  height: 65,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isAdd ? AppColors.primaryBlue : const Color(0xFF1E3A5C),
-                      width: 1.5,
+  Widget _buildBanner() {
+    return Container(
+      height: 160,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0D2137), Color(0xFF1A3A5C)],
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Nemo (Clownfish)\nStarter Kits',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-                    color: isAdd
-                        ? const Color(0xFF0D1F35)
-                        : const Color(0xFF112240),
                   ),
-                  child: isAdd
-                      ? const Icon(Icons.add, color: AppColors.primaryBlue)
-                      : const CircleAvatar(
-                          backgroundColor: Color(0xFF1A3A5C),
-                          child: Icon(Icons.person, color: Colors.white),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Everything you need for your first reef friend.',
+                    style: TextStyle(color: kSub, fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Text(
+                        'Rs. 14,999',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  story,
-                  style: const TextStyle(
-                    color: Color(0xFF7AB8CC),
-                    fontSize: 13,
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kAccent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text(
+                          'Shop Now',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
+          ),
+          ClipRRect(
+            borderRadius: const BorderRadius.horizontal(
+              right: Radius.circular(16),
+            ),
+            child: Image.asset(
+              'assets/images/clownfish.png',
+              width: 120,
+              height: 160,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFeedPost({
-    required String name,
-    required String time,
-    required String text,
-    required String likes,
-    required String comments,
-    required bool hasImage,
-  }) {
+  Widget _buildAICard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF112240),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        color: kCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const CircleAvatar(
-                radius: 20,
-                backgroundColor: Color(0xFF1A3A5C),
-                child: Icon(Icons.person, color: AppColors.primaryBlue),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    time,
-                    style: const TextStyle(
-                      color: Color(0xFF7AB8CC),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              Icon(Icons.smart_toy_outlined, color: kAccent, size: 16),
+              SizedBox(width: 6),
+              Text(
+                'AQUARIUM ASSISTANT',
+                style: TextStyle(
+                  color: kAccent,
+                  fontSize: 11,
+                  letterSpacing: 1,
+                ),
               ),
             ],
           ),
-          if (text.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              text,
-              style: const TextStyle(color: Colors.white, height: 1.4),
+          const SizedBox(height: 8),
+          const Text(
+            'AI Fish Identifier',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
-          ],
-          if (hasImage) ...[
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1000&auto=format&fit=crop',
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 200,
-                  color: const Color(0xFF0D1F35),
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.broken_image_outlined, color: Color(0xFF7AB8CC), size: 40),
-                ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Snap a photo to instantly identify species and get care recommendations.',
+            style: TextStyle(color: kSub, fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.camera_alt_outlined, size: 16),
+            label: const Text('Open Camera'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kMid,
+              foregroundColor: kAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
             ),
-          ],
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  _buildActionIcon(Icons.thumb_up_alt_outlined, likes),
-                  const SizedBox(width: 20),
-                  _buildActionIcon(Icons.chat_bubble_outline, comments),
-                  const SizedBox(width: 20),
-                  _buildActionIcon(Icons.reply_outlined, ''),
-                ],
-              ),
-              const Icon(Icons.bookmark_border, color: Color(0xFF7AB8CC)),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionIcon(IconData icon, String count) {
-    return Row(
+  Widget _buildCategoriesSection() {
+    final categories = [
+      {'icon': Icons.set_meal, 'name': 'Fish', 'sub': '2.4k Species'},
+      {'icon': Icons.restaurant, 'name': 'Food', 'sub': '450 Products'},
+      {'icon': Icons.grass, 'name': 'Plants', 'sub': '120 Variations'},
+      {'icon': Icons.settings, 'name': 'Equipment', 'sub': 'High Precision'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: const Color(0xFF7AB8CC), size: 22),
-        if (count.isNotEmpty) ...[
-          const SizedBox(width: 6),
-          Text(count, style: const TextStyle(color: Color(0xFF7AB8CC))),
-        ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Explore Categories',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Everything for your aquatic world',
+                  style: TextStyle(color: kSub, fontSize: 12),
+                ),
+              ],
+            ),
+            TextButton(
+              onPressed: () {},
+              child: const Text(
+                'View All >',
+                style: TextStyle(color: kAccent, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 2,
+          children: categories.map((c) {
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: kCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: kBorder),
+              ),
+              child: Row(
+                children: [
+                  Icon(c['icon'] as IconData, color: kAccent, size: 24),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        c['name'] as String,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        c['sub'] as String,
+                        style: const TextStyle(color: kSub, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpertsChoice() {
+    final products = [
+      {
+        'name': 'Neon Tetra Bundle',
+        'sub': 'Pack of 10 schoolers',
+        'price': 'Rs. 1,299',
+        'image': 'assets/images/neon_tetra.png',
+      },
+      {
+        'name': 'Premium Coral',
+        'sub': 'Handcrafted decor',
+        'price': 'Rs. 4,499',
+        'image': 'assets/images/coral.png',
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Expert's Choice",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 200,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemCount: products.length,
+            itemBuilder: (context, index) {
+              final p = products[index];
+              return Container(
+                width: 160,
+                decoration: BoxDecoration(
+                  color: kCard,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: kBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(16),
+                            ),
+                            child: Image.asset(
+                              p['image']!,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: kMid,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.favorite_border,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p['name']!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            p['sub']!,
+                            style: const TextStyle(color: kSub, fontSize: 11),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                p['price']!,
+                                style: const TextStyle(
+                                  color: kAccent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: const BoxDecoration(
+                                  color: kAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
       ],
     );
   }

@@ -1,0 +1,109 @@
+================================================================
+  LOST & FOUND API — URL REFERENCE
+================================================================
+
+Base URL:   http://localhost:3000
+API Prefix: /api/v1
+
+
+AUTHENTICATION
+----------------------------------------------------------------
+Protected routes require a JWT in the Authorization header:
+
+    Authorization: Bearer <token>
+
+Get a token by calling POST /api/v1/students/login (or by
+registering via POST /api/v1/students). Routes marked
+[PROTECTED] return 401 "Not authorized to access this route"
+without a valid token. Routes marked [PUBLIC] need no token.
+
+Legend:  [PUBLIC] = open   |   [PROTECTED] = requires Bearer token
+
+
+================================================================
+  STUDENTS  —  /api/v1/students
+================================================================
+[PUBLIC]     POST   /api/v1/students                Register a new student
+[PUBLIC]     POST   /api/v1/students/login          Login, returns JWT token
+[PUBLIC]     GET    /api/v1/students/:id            Get a student by ID
+[PROTECTED]  GET    /api/v1/students                Get all students (prevents user enumeration)
+[PROTECTED]  POST   /api/v1/students/upload         Upload profile picture (field: profilePicture)
+[PROTECTED]  PUT    /api/v1/students/:id            Update a student
+[PROTECTED]  DELETE /api/v1/students/:id            Delete a student
+
+  Rate limits:
+    - POST /students        max 10 registrations per IP per hour
+    - POST /students/login  max 5 attempts per IP per 15 min
+
+
+================================================================
+  ITEMS  —  /api/v1/items
+================================================================
+[PUBLIC]     GET    /api/v1/items                   Get all lost/found items
+[PUBLIC]     GET    /api/v1/items/:id               Get a single item by ID
+[PROTECTED]  POST   /api/v1/items                   Create an item
+[PROTECTED]  PUT    /api/v1/items/:id               Update an item
+[PROTECTED]  DELETE /api/v1/items/:id               Delete an item
+[PROTECTED]  POST   /api/v1/items/upload-photo      Upload item photo (field: itemPhoto)
+[PROTECTED]  POST   /api/v1/items/upload-video      Upload item video (field: itemVideo)
+
+
+================================================================
+  CATEGORIES  —  /api/v1/categories
+================================================================
+[PUBLIC]     GET    /api/v1/categories              Get all categories
+[PUBLIC]     GET    /api/v1/categories/:id          Get a category by ID
+[PROTECTED]  POST   /api/v1/categories              Create a category
+[PROTECTED]  PUT    /api/v1/categories/:id          Update a category
+[PROTECTED]  DELETE /api/v1/categories/:id          Delete a category
+
+
+================================================================
+  BATCHES  —  /api/v1/batches
+================================================================
+[PUBLIC]     GET    /api/v1/batches                 Get all batches
+[PUBLIC]     GET    /api/v1/batches/:id             Get a batch by ID
+[PROTECTED]  POST   /api/v1/batches                 Create a batch
+[PROTECTED]  PUT    /api/v1/batches/:id             Update a batch
+
+
+================================================================
+  COMMENTS  —  /api/v1/comments
+================================================================
+[PUBLIC]     GET    /api/v1/comments/item/:itemId           Get comments for an item
+[PUBLIC]     GET    /api/v1/comments/:commentId/replies     Get replies for a comment
+[PUBLIC]     GET    /api/v1/comments/student/:studentId     Get comments by a student
+[PUBLIC]     GET    /api/v1/comments/mentions/:studentId    Get mentions for a student
+[PROTECTED]  POST   /api/v1/comments                        Create a comment
+[PROTECTED]  PUT    /api/v1/comments/:id                    Update a comment
+[PROTECTED]  DELETE /api/v1/comments/:id                    Delete a comment
+[PROTECTED]  POST   /api/v1/comments/:id/like               Like / unlike a comment
+
+
+================================================================
+  QUICK SUMMARY OF PROTECTED ROUTES
+================================================================
+All write operations (POST / PUT / DELETE) and all uploads
+require a Bearer token, PLUS these reads:
+
+  [PROTECTED]  GET  /api/v1/students        (full student list)
+
+Everything else (most GET reads, register, login) is public.
+
+
+================================================================
+  EXAMPLE REQUESTS
+================================================================
+# Login to get a token
+curl -X POST http://localhost:3000/api/v1/students/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"secret"}'
+
+# Public read — no token needed
+curl http://localhost:3000/api/v1/items
+
+# Protected request — include the token
+curl -X POST http://localhost:3000/api/v1/items \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Lost wallet","category":"<categoryId>"}'

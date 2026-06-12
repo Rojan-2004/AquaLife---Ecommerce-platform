@@ -16,7 +16,7 @@ class OnboardingViewModel extends StateNotifier<void> {
       : _userSharedPrefs = userSharedPrefs,
         super(null);
 
-  Future<void> completeOnboarding(BuildContext context, {int initialLoginIndex = 0}) async {
+  Future<void> completeOnboarding(BuildContext context) async {
     await _userSharedPrefs.setFirstTime(false);
 
     if (!context.mounted) return;

@@ -28,6 +28,9 @@ class AuthHiveModel extends HiveObject {
   @HiveField(6)
   final String? profilePicture;
 
+  @HiveField(7)
+  final String? batchId;
+
   AuthHiveModel({
     String? authId,
     required this.fullName,
@@ -36,9 +39,9 @@ class AuthHiveModel extends HiveObject {
     required this.username,
     required this.password,
     this.profilePicture,
+    this.batchId,
   }) : authId = authId ?? const Uuid().v4();
 
-  // From Entity
   factory AuthHiveModel.fromEntity(AuthEntity entity) {
     return AuthHiveModel(
       authId: entity.authId,
@@ -48,10 +51,10 @@ class AuthHiveModel extends HiveObject {
       username: entity.username,
       password: entity.password,
       profilePicture: entity.profilePicture,
+      batchId: entity.batchId,
     );
   }
 
-  // To Entity
   AuthEntity toEntity() {
     return AuthEntity(
       authId: authId,
@@ -61,10 +64,10 @@ class AuthHiveModel extends HiveObject {
       username: username,
       password: password,
       profilePicture: profilePicture,
+      batchId: batchId,
     );
   }
 
-  // To Entity List
   static List<AuthEntity> toEntityList(List<AuthHiveModel> models) {
     return models.map((model) => model.toEntity()).toList();
   }
