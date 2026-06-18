@@ -2,7 +2,10 @@ import 'package:aqua_life/app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.onCartPressed, this.onAssistantPressed});
+
+  final VoidCallback? onCartPressed;
+  final VoidCallback? onAssistantPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -64,21 +67,29 @@ class HomeScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildAppBarIcon(Icons.search, compact),
-            _buildAppBarIcon(Icons.shopping_cart_outlined, compact),
+            _buildAppBarIcon(
+              Icons.shopping_cart_outlined,
+              compact,
+              onCartPressed,
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildAppBarIcon(IconData icon, bool compact) {
+  Widget _buildAppBarIcon(
+    IconData icon,
+    bool compact, [
+    VoidCallback? onPressed,
+  ]) {
     return SizedBox(
       width: compact ? 36 : 40,
       height: compact ? 36 : 40,
       child: IconButton(
         padding: EdgeInsets.zero,
         icon: Icon(icon, color: Colors.white, size: compact ? 18 : 20),
-        onPressed: () {},
+        onPressed: onPressed ?? () {},
       ),
     );
   }
@@ -182,10 +193,7 @@ class HomeScreen extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset(
-          'assets/images/clownfish.png',
-          fit: BoxFit.cover,
-        ),
+        Image.asset('assets/images/clownfish.png', fit: BoxFit.cover),
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -309,7 +317,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: onAssistantPressed,
             icon: const Icon(Icons.camera_alt_outlined, size: 16),
             label: const Text('Open Camera'),
             style: ElevatedButton.styleFrom(
@@ -395,7 +403,11 @@ class HomeScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(c['icon'] as IconData, color: kAccent, size: compact ? 20 : 24),
+                  Icon(
+                    c['icon'] as IconData,
+                    color: kAccent,
+                    size: compact ? 20 : 24,
+                  ),
                   SizedBox(width: compact ? 7 : 10),
                   Expanded(
                     child: Column(
@@ -416,7 +428,10 @@ class HomeScreen extends StatelessWidget {
                           c['sub'] as String,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: kSub, fontSize: compact ? 10 : 11),
+                          style: TextStyle(
+                            color: kSub,
+                            fontSize: compact ? 10 : 11,
+                          ),
                         ),
                       ],
                     ),
@@ -530,7 +545,10 @@ class HomeScreen extends StatelessWidget {
                             p['sub']!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: kSub, fontSize: compact ? 10 : 11),
+                            style: TextStyle(
+                              color: kSub,
+                              fontSize: compact ? 10 : 11,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Row(

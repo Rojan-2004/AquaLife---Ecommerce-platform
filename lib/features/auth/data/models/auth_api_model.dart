@@ -9,6 +9,7 @@ class AuthApiModel {
   final String? password;
   final String? profilePicture;
   final String? token;
+  final String? refreshToken;
 
   AuthApiModel({
     this.id,
@@ -19,18 +20,22 @@ class AuthApiModel {
     this.password,
     this.profilePicture,
     this.token,
+    this.refreshToken,
   });
 
   Map<String, dynamic> toJson() {
-    return {
+    final json = {
       'name': fullName,
       'fullName': fullName,
       'email': email,
       'phoneNumber': phoneNumber,
       'username': username,
       'password': password,
-      'profilePicture': profilePicture,
     };
+    if (profilePicture != null && profilePicture!.isNotEmpty) {
+      json['profilePicture'] = profilePicture;
+    }
+    return json;
   }
 
   factory AuthApiModel.fromJson(dynamic json) {
@@ -59,6 +64,10 @@ class AuthApiModel {
         name: 'profilePicture',
       ),
       token: _asStringOrNull(root['token'] ?? data['token'], name: 'token'),
+      refreshToken: _asStringOrNull(
+        root['refreshToken'] ?? data['refreshToken'],
+        name: 'refreshToken',
+      ),
     );
   }
 

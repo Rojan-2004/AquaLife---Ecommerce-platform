@@ -52,17 +52,43 @@ class AuthRepository implements IAuthRepository {
     if (await _networkInfo.isConnected) {
       try {
         final apiModel = AuthApiModel.fromEntity(user);
-        await _authRemoteDataSource.register(apiModel);
+        final result = await _authRemoteDataSource.register(apiModel);
+        if (result != null) {
+          if (result.token != null) {
+            await _tokenService.saveToken(result.token!);
+          }
+          if (result.refreshToken != null) {
+            await _tokenService.saveRefreshToken(result.refreshToken!);
+          }
+          await _userSessionService.saveUserSession(
+            userId: result.id ?? '',
+            email: result.email,
+            username: result.username,
+            fullName: result.fullName,
+            phoneNumber: result.phoneNumber,
+            profilePicture: result.profilePicture,
+          );
+          final authModel = AuthHiveModel(
+            authId: result.id,
+            fullName: result.fullName,
+            email: result.email,
+            phoneNumber: result.phoneNumber,
+            username: result.username,
+            password: user.password,
+            profilePicture: result.profilePicture,
+          );
+          await _authDataSource.register(authModel);
+        }
         return const Right(true);
       } on DioException catch (e) {
         return Left(
           ApiFailure(
-            message: e.response?.data['message'] ?? "Registration failed",
+            message: _extractErrorMessage(e.response?.data, 'Registration failed'),
             statusCode: e.response?.statusCode,
           ),
         );
       } catch (e) {
-        return Left(ApiFailure(message: e.toString()));
+        return const Left(ApiFailure(message: 'Registration failed. Please try again.'));
       }
     } else {
       try {
@@ -84,7 +110,7 @@ class AuthRepository implements IAuthRepository {
         await _authDataSource.register(authModel);
         return const Right(true);
       } catch (e) {
-        return Left(LocalDatabaseFailure(message: e.toString()));
+        return const Left(LocalDatabaseFailure(message: 'Unable to register offline'));
       }
     }
   }
@@ -100,6 +126,9 @@ class AuthRepository implements IAuthRepository {
         if (apiModel != null) {
           if (apiModel.token != null) {
             await _tokenService.saveToken(apiModel.token!);
+          }
+          if (apiModel.refreshToken != null) {
+            await _tokenService.saveRefreshToken(apiModel.refreshToken!);
           }
           await _userSessionService.saveUserSession(
             userId: apiModel.id ?? '',
@@ -127,12 +156,12 @@ class AuthRepository implements IAuthRepository {
       } on DioException catch (e) {
         return Left(
           ApiFailure(
-            message: e.response?.data['message'] ?? "Login failed",
+            message: _extractErrorMessage(e.response?.data, 'Login failed'),
             statusCode: e.response?.statusCode,
           ),
         );
       } catch (e) {
-        return Left(ApiFailure(message: e.toString()));
+        return const Left(ApiFailure(message: 'Login failed. Please try again.'));
       }
     } else {
       try {
@@ -145,7 +174,7 @@ class AuthRepository implements IAuthRepository {
           LocalDatabaseFailure(message: "Invalid email or password"),
         );
       } catch (e) {
-        return Left(LocalDatabaseFailure(message: e.toString()));
+        return const Left(LocalDatabaseFailure(message: 'Unable to login offline'));
       }
     }
   }
@@ -160,7 +189,7 @@ class AuthRepository implements IAuthRepository {
       }
       return const Left(LocalDatabaseFailure(message: "No user logged in"));
     } catch (e) {
-      return Left(LocalDatabaseFailure(message: e.toString()));
+      return const Left(LocalDatabaseFailure(message: 'Unable to get user profile'));
     }
   }
 
@@ -174,7 +203,15 @@ class AuthRepository implements IAuthRepository {
       }
       return const Left(LocalDatabaseFailure(message: "Failed to logout"));
     } catch (e) {
-      return Left(LocalDatabaseFailure(message: e.toString()));
+      return const Left(LocalDatabaseFailure(message: 'Logout failed'));
     }
   }
+}
+
+String _extractErrorMessage(dynamic data, String fallback) {
+  if (data is Map) {
+    final message = data['message'];
+    if (message is String && message.isNotEmpty) return message;
+  }
+  return fallback;
 }

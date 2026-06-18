@@ -1,5 +1,8 @@
 import 'package:aqua_life/app/theme/app_theme.dart';
+import 'package:aqua_life/features/assistant/presentation/pages/assistant_screen.dart';
+import 'package:aqua_life/features/cart/presentation/pages/cart_screen.dart';
 import 'package:aqua_life/features/home/presentation/pages/home_page.dart';
+import 'package:aqua_life/features/profile/presentation/pages/profile_screen.dart';
 import 'package:flutter/material.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -12,18 +15,27 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomeScreen(),
-    _PlaceholderPage(label: 'Shop', icon: Icons.store_outlined),
-    _PlaceholderPage(label: 'Assistant', icon: Icons.smart_toy_outlined),
-    _PlaceholderPage(label: 'Profile', icon: Icons.person_outline),
-  ];
+  void _selectTab(int index) {
+    if (_currentIndex == index) return;
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      body: _pages[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          HomeScreen(
+            onCartPressed: () => _selectTab(1),
+            onAssistantPressed: () => _selectTab(2),
+          ),
+          CartScreen(onBack: () => _selectTab(0)),
+          const AssistantScreen(),
+          const ProfileScreen(),
+        ],
+      ),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -32,60 +44,34 @@ class _DashboardPageState extends State<DashboardPage> {
     return BottomNavigationBar(
       backgroundColor: kInput,
       selectedItemColor: kAccent,
-      unselectedItemColor: kHint,
+      unselectedItemColor: kSub,
       type: BottomNavigationBarType.fixed,
       currentIndex: _currentIndex,
-      onTap: (i) => setState(() => _currentIndex = i),
+      onTap: _selectTab,
+      showSelectedLabels: false,
+      showUnselectedLabels: false,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
         BottomNavigationBarItem(
-          icon: Icon(Icons.store_outlined),
-          label: 'Shop',
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.shopping_cart_outlined),
+          activeIcon: Icon(Icons.shopping_cart),
+          label: 'Cart',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.smart_toy_outlined),
+          activeIcon: Icon(Icons.smart_toy),
           label: 'Assistant',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
+          activeIcon: Icon(Icons.person),
           label: 'Profile',
         ),
       ],
-    );
-  }
-}
-
-class _PlaceholderPage extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _PlaceholderPage({required this.label, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBg,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: kAccent, size: 48),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Coming soon',
-              style: TextStyle(color: kSub, fontSize: 13),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

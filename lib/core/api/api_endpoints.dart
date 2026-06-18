@@ -15,4 +15,5 @@ class ApiEndpoints {
   static const String authLogin = '/auth/login';
   static const String authMe = '/auth/me';
   static const String authLogout = '/auth/logout';
+  static const String authRefreshToken = '/auth/refresh-token';
 }

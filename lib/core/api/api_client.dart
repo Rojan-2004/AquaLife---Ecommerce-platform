@@ -28,7 +28,7 @@ class ApiClient {
     );
 
     // Add interceptors
-    _dio.interceptors.add(_AuthInterceptor());
+    _dio.interceptors.add(_AuthInterceptor(_dio));
 
     // Auto retry on network failures
     _dio.interceptors.add(
@@ -139,8 +139,12 @@ class ApiClient {
 
 // Auth Interceptor to add JWT token to requests
 class _AuthInterceptor extends Interceptor {
+  final Dio dio;
   final _storage = const FlutterSecureStorage();
   static const String _tokenKey = 'auth_token';
+  static const String _refreshTokenKey = 'refresh_token';
+
+  _AuthInterceptor(this.dio);
 
   @override
   void onRequest(
@@ -151,6 +155,7 @@ class _AuthInterceptor extends Interceptor {
     final publicEndpoints = [
       ApiEndpoints.authLogin,
       ApiEndpoints.authRegister,
+      ApiEndpoints.authRefreshToken,
     ];
 
     final isPublicGet =
@@ -159,7 +164,8 @@ class _AuthInterceptor extends Interceptor {
 
     final isAuthEndpoint =
         options.path == ApiEndpoints.authLogin ||
-        options.path == ApiEndpoints.authRegister;
+        options.path == ApiEndpoints.authRegister ||
+        options.path == ApiEndpoints.authRefreshToken;
 
     if (!isPublicGet && !isAuthEndpoint) {
       final token = await _storage.read(key: _tokenKey);
@@ -172,12 +178,38 @@ class _AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
-    // Handle 401 Unauthorized - token expired
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // Handle 401 Unauthorized - token expired, attempt refresh
     if (err.response?.statusCode == 401) {
-      // Clear token and redirect to login
-      _storage.delete(key: _tokenKey);
-      // You can add navigation logic here or use a callback
+      final refreshToken = await _storage.read(key: _refreshTokenKey);
+      if (refreshToken != null) {
+        try {
+          final refreshResponse = await dio.post(
+            ApiEndpoints.authRefreshToken,
+            data: {'refreshToken': refreshToken},
+          );
+          if (refreshResponse.statusCode == 200 && refreshResponse.data != null) {
+            final newToken = refreshResponse.data['token'] as String?;
+            final newRefreshToken = refreshResponse.data['refreshToken'] as String?;
+            if (newToken != null) {
+              await _storage.write(key: _tokenKey, value: newToken);
+              if (newRefreshToken != null) {
+                await _storage.write(key: _refreshTokenKey, value: newRefreshToken);
+              }
+              // Retry original request with new token
+              final RequestOptions request = err.requestOptions;
+              request.headers['Authorization'] = 'Bearer $newToken';
+              final retryResponse = await dio.fetch(request);
+              return handler.resolve(retryResponse);
+            }
+          }
+        } catch (_) {
+          // Refresh failed, clear tokens
+        }
+      }
+      // Clear tokens on auth failure
+      await _storage.delete(key: _tokenKey);
+      await _storage.delete(key: _refreshTokenKey);
     }
     handler.next(err);
   }

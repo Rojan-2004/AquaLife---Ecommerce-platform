@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 abstract class IAuthRemoteDataSource {
   Future<AuthApiModel?> login(String email, String password);
   Future<AuthApiModel?> register(AuthApiModel model);
+  Future<AuthApiModel?> refreshToken(String? refreshToken);
 }
 
 class AuthRemoteDatasource implements IAuthRemoteDataSource {
@@ -51,6 +52,25 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
       );
     } catch (e) {
       throw Exception('Registration failed: $e');
+    }
+  }
+
+  @override
+  Future<AuthApiModel?> refreshToken(String? refreshToken) async {
+    if (refreshToken == null) return null;
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.authRefreshToken,
+        data: {'refreshToken': refreshToken},
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        return AuthApiModel.fromJson(response.data);
+      }
+      return null;
+    } on DioException {
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 }
