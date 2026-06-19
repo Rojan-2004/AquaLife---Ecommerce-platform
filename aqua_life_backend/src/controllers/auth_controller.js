@@ -3,6 +3,8 @@ const { registerSchema, loginSchema } = require("../validations/auth_validation"
 const { z } = require("zod");
 const jwt = require("jsonwebtoken");
 const HttpException = require("../utils/httpException");
+const upload = require("../middleware/uploads");
+const path = require("path");
 
 const normalizeEmail = (value) => {
   if (typeof value !== "string") return "";
@@ -280,10 +282,124 @@ const refreshToken = async (req, res, next) => {
   }
 };
 
+// @desc    Update current user profile
+// @route   PATCH /api/v1/auth/update-profile
+// @access  Private
+const updateProfile = async (req, res, next) => {
+  try {
+    const schema = z.object({
+      fullName: z.string().trim().optional(),
+      phoneNumber: z.string().trim().optional().nullable(),
+      username: z.string().trim().optional(),
+    });
+
+    const validated = schema.safeParse(req.body);
+    if (!validated.success) {
+      return res.status(400).json({
+        success: false,
+        message: formatZodError(validated.error),
+      });
+    }
+
+    const updates = validated.data;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (typeof updates.fullName === "string" && updates.fullName.trim()) {
+      user.fullName = updates.fullName.trim();
+      const parts = updates.fullName.trim().split(" ");
+      user.firstName = user.firstName || parts[0] || "";
+      user.lastName = user.lastName || parts.slice(1).join(" ") || "";
+      user.name = user.fullName;
+    }
+
+    if (typeof updates.phoneNumber === "string" && updates.phoneNumber.trim()) {
+      user.phoneNumber = updates.phoneNumber.trim();
+    } else if (updates.phoneNumber === null) {
+      user.phoneNumber = undefined;
+    }
+
+    if (typeof updates.username === "string" && updates.username.trim()) {
+      updates.username = updates.username.trim();
+      const existingUsername = await User.findOne({ username: updates.username })
+        .select("_id")
+        .collation({ locale: "en", strength: 2 });
+      if (existingUsername && existingUsername._id.toString() !== user._id.toString()) {
+        return res.status(400).json({ success: false, message: "Username already taken" });
+      }
+      user.username = updates.username;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: user.safeProfile(),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Upload profile picture
+// @route   PUT /api/v1/auth/upload-profile-picture
+// @access  Private
+const uploadProfilePicture = [
+  upload.single("profilePicture"),
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "Please upload a profile picture",
+        });
+      }
+
+      const imageUrl = `/profile_pictures/${req.file.filename}`;
+
+      const user = await User.findById(req.user._id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      if (
+        user.profilePicture &&
+        user.profilePicture !== "default-profile.png"
+      ) {
+        const oldPath = path.join("public", user.profilePicture);
+        if (require("fs").existsSync(oldPath)) {
+          try {
+            require("fs").unlinkSync(oldPath);
+          } catch (_err) {
+            console.warn(`[PROFILE_PIC] Unable to remove old file: ${oldPath}`);
+          }
+        }
+      }
+
+      user.profilePicture = imageUrl;
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Profile picture uploaded successfully",
+        data: user.safeProfile(),
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+];
+
 module.exports = {
   register,
   login,
   getMe,
   logout,
   refreshToken,
+  updateProfile,
+  uploadProfilePicture,
 };

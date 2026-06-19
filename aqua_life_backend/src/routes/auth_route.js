@@ -8,6 +8,8 @@ const {
   getMe,
   logout,
   refreshToken,
+  updateProfile,
+  uploadProfilePicture,
 } = require("../controllers/auth_controller");
 
 // Public routes
@@ -19,5 +21,7 @@ router.post("/refresh-token", refreshToken);
 router.get("/me", protect, getMe);
 router.get("/profile", protect, getMe); // Duplicate mapped for web/mobile client compatibility
 router.post("/logout", protect, logout);
+router.patch("/update-profile", protect, updateProfile);
+router.put("/upload-profile-picture", protect, uploadProfilePicture);
 
 module.exports = router;

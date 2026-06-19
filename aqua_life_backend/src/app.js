@@ -88,7 +88,7 @@ const corsOptions = {
 app.use(cors(corsOptions)); // Enable CORS with options
 
 app.use(limiter); // Apply rate limiting to all requests
-app.use(express.static(path.join(__dirname, "../public"))); // Serve static files
+app.use(express.static(path.join(__dirname, "../public")));
 
 // Routers
 const authRoute = require("./routes/auth_route");

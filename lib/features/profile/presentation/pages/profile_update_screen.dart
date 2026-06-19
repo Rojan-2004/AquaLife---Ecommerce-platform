@@ -1,0 +1,270 @@
+import 'dart:convert';
+
+import 'package:aqua_life/app/theme/app_theme.dart';
+import 'package:aqua_life/core/api/api_client.dart';
+import 'package:aqua_life/core/api/api_endpoints.dart';
+import 'package:aqua_life/core/services/storage/user_session_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class ProfileUpdateScreen extends ConsumerStatefulWidget {
+  const ProfileUpdateScreen({super.key});
+
+  @override
+  ConsumerState<ProfileUpdateScreen> createState() => _ProfileUpdateScreenState();
+}
+
+class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _phoneController = TextEditingController();
+
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadExistingProfile());
+  }
+
+  void _loadExistingProfile() {
+    final prefs = ref.read(userSessionServiceProvider);
+    if (!mounted) return;
+    setState(() {
+      _fullNameController.text = prefs.getUserFullName() ?? '';
+      _emailController.text = prefs.getUserEmail() ?? '';
+      _usernameController.text = prefs.getUsername() ?? '';
+      _phoneController.text = prefs.getUserPhoneNumber() ?? '';
+    });
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _usernameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (!mounted) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final body = <String, dynamic>{
+        'fullName': _fullNameController.text.trim(),
+        'username': _usernameController.text.trim(),
+        'phoneNumber': _phoneController.text.trim().isEmpty
+            ? null
+            : _phoneController.text.trim(),
+      };
+
+      final response = await apiClient.patch(
+        ApiEndpoints.authUpdateProfile,
+        data: body,
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final raw = response.data is String ? jsonDecode(response.data) : response.data;
+        final user = raw['data'] ?? raw;
+        if (user is Map) {
+          await ref.read(userSessionServiceProvider).saveUserSession(
+            userId: user['id']?.toString() ?? user['_id']?.toString() ?? '',
+            email: user['email']?.toString() ?? _emailController.text.trim(),
+            username: user['username']?.toString() ?? _usernameController.text.trim(),
+            fullName: user['fullName']?.toString() ?? _fullNameController.text.trim(),
+            phoneNumber: user['phoneNumber']?.toString(),
+            profilePicture: user['profilePicture']?.toString(),
+          );
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated')),
+          );
+          Navigator.of(context).pop();
+        }
+        return;
+      }
+
+      final message = _messageFromResponseData(response.data);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message ?? 'Update failed')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile update failed')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  String? _messageFromResponseData(dynamic data) {
+    if (data is Map) {
+      final message = data['message'];
+      if (message is String && message.isNotEmpty) return message;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 360;
+
+    return Scaffold(
+      backgroundColor: kBg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Edit Profile'),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 16 : 20,
+            vertical: compact ? 12 : 16,
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                _buildTextField(
+                  controller: _fullNameController,
+                  label: 'Full Name',
+                  icon: Icons.person_outline,
+                  compact: compact,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return 'Required';
+                    if (v.split(' ').length < 2) return 'Enter first and last name';
+                    return null;
+                  },
+                ),
+                SizedBox(height: compact ? 10 : 12),
+                _buildTextField(
+                  controller: _emailController,
+                  label: 'Email',
+                  icon: Icons.email_outlined,
+                  compact: compact,
+                  enabled: false,
+                ),
+                SizedBox(height: compact ? 10 : 12),
+                _buildTextField(
+                  controller: _usernameController,
+                  label: 'Username',
+                  icon: Icons.alternate_email,
+                  compact: compact,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return 'Required';
+                    if (v.length < 3) return 'Min 3 characters';
+                    return null;
+                  },
+                ),
+                SizedBox(height: compact ? 10 : 12),
+                _buildTextField(
+                  controller: _phoneController,
+                  label: 'Phone Number',
+                  icon: Icons.phone_outlined,
+                  compact: compact,
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return null;
+                    if (v.length < 10) return 'Invalid phone number';
+                    return null;
+                  },
+                ),
+                SizedBox(height: compact ? 16 : 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: compact ? 50 : 54,
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kAccent,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                            ),
+                          )
+                        : const Text(
+                            'Save Changes',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool compact = false,
+    bool enabled = true,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: enabled ? kInput : kCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: TextFormField(
+        controller: controller,
+        enabled: enabled,
+        keyboardType: keyboardType,
+        style: TextStyle(color: Colors.white, fontSize: compact ? 14 : 15),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: kSub, fontSize: compact ? 12 : 13),
+          prefixIcon: SizedBox(
+            width: compact ? 36 : 40,
+            child: Icon(icon, color: kAccent, size: compact ? 18 : 20),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 14,
+            vertical: compact ? 11 : 14,
+          ),
+        ),
+        validator: validator,
+      ),
+    );
+  }
+}

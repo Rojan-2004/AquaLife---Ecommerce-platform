@@ -1,10 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:aqua_life/app/theme/app_theme.dart';
+import 'package:aqua_life/core/api/api_client.dart';
+import 'package:aqua_life/core/api/api_endpoints.dart';
 import 'package:aqua_life/core/services/storage/user_session_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import 'profile_update_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -17,16 +22,114 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
   String? _profileImagePath;
   bool _isUpdatingImage = false;
+  bool _isLoadingProfile = true;
+  String _fullName = 'AquaLife Member';
+  String _email = 'hello@aqualife.com';
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _profileImagePath = ref
-          .read(userSessionServiceProvider)
-          .getUserProfileImage();
-      if (mounted) setState(() {});
+      _loadProfileFromPrefs();
+      _loadProfileFromBackend();
     });
+  }
+
+  Future<void> _loadProfileFromPrefs() async {
+    final prefs = ref.read(userSessionServiceProvider);
+    if (!mounted) return;
+    setState(() {
+      _userId = prefs.getUserId();
+      _email = prefs.getUserEmail() ?? _email;
+      _fullName = prefs.getUserFullName() ?? prefs.getUsername() ?? _fullName;
+      _profileImagePath = prefs.getUserProfileImage();
+    });
+  }
+
+  Future<void> _loadProfileFromBackend() async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.get(ApiEndpoints.authMe);
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data is String ? jsonDecode(response.data) : response.data;
+        final user = body['data'] ?? body;
+        if (user is Map) {
+          final name = user['fullName'] ?? user['name'];
+          final email = user['email'];
+          final profilePicture = user['profilePicture'];
+          String? resolvedImagePath = _profileImagePath;
+          if (profilePicture != null && profilePicture.toString().isNotEmpty) {
+            resolvedImagePath = profilePicture.toString().startsWith('http')
+                ? profilePicture.toString()
+                : '${ApiEndpoints.baseUrl}${profilePicture.toString()}';
+          }
+
+          if (!mounted) return;
+          setState(() {
+            if (name != null) _fullName = name.toString();
+            if (email != null) _email = email.toString();
+            _userId = user['id'] ?? user['_id']?.toString();
+            _profileImagePath = resolvedImagePath;
+            _isLoadingProfile = false;
+          });
+
+          await ref.read(userSessionServiceProvider).saveUserSession(
+            userId: _userId ?? '',
+            email: _email,
+            username: user['username']?.toString() ?? '',
+            fullName: _fullName,
+            phoneNumber: user['phoneNumber']?.toString(),
+            profilePicture: resolvedImagePath,
+          );
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load profile from backend: $e');
+    }
+    if (mounted) setState(() => _isLoadingProfile = false);
+  }
+
+  Future<void> _uploadProfileImageToBackend(File imageFile) async {
+    setState(() => _isUpdatingImage = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final formData = FormData.fromMap({
+        'profilePicture': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split(Platform.pathSeparator).last,
+        ),
+      });
+
+      final response = await apiClient.uploadFile(
+        ApiEndpoints.authUploadProfilePicture,
+        formData: formData,
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data is String ? jsonDecode(response.data) : response.data;
+        final user = body['data'] ?? body;
+        if (user is Map && user['profilePicture'] != null) {
+          final profileUrl = user['profilePicture'].toString().startsWith('http')
+              ? user['profilePicture'].toString()
+              : '${ApiEndpoints.baseUrl}${user['profilePicture'].toString()}';
+
+          if (!mounted) return;
+          setState(() => _profileImagePath = profileUrl);
+          await ref.read(userSessionServiceProvider).updateUserProfileImage(profileUrl);
+        }
+      }
+    } catch (e) {
+      debugPrint('Profile picture upload failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to upload profile picture')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdatingImage = false);
+    }
   }
 
   @override
@@ -78,7 +181,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AquaLife Member',
+                  _isLoadingProfile ? 'Loading...' : _fullName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -89,7 +192,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 SizedBox(height: compact ? 3 : 4),
                 Text(
-                  'hello@aqualife.com',
+                  _isLoadingProfile ? '' : _email,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: kSub, fontSize: compact ? 11 : 13),
@@ -133,7 +236,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             border: Border.all(color: kBorder, width: 1.5),
             image: _profileImagePath != null
                 ? DecorationImage(
-                    image: FileImage(File(_profileImagePath!)),
+                    image: _profileImagePath!.startsWith('http')
+                        ? NetworkImage(_profileImagePath!)
+                        : FileImage(File(_profileImagePath!)),
                     fit: BoxFit.cover,
                   )
                 : null,
@@ -217,6 +322,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     const rows = [
       _MenuRow(icon: Icons.history, label: 'Order History'),
       _MenuRow(icon: Icons.favorite_border, label: 'Wishlist'),
+      _MenuRow(icon: Icons.person_outline, label: 'Edit Profile'),
       _MenuRow(icon: Icons.location_on_outlined, label: 'Saved Addresses'),
       _MenuRow(icon: Icons.credit_card, label: 'Payment Methods'),
       _MenuRow(icon: Icons.notifications_outlined, label: 'Notifications'),
@@ -228,7 +334,56 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: rows.length,
       separatorBuilder: (_, _) => SizedBox(height: compact ? 8 : 10),
-      itemBuilder: (context, index) => _buildMenuRow(rows[index], compact),
+      itemBuilder: (context, index) {
+        final row = rows[index];
+        if (row.label == 'Edit Profile') {
+          return _buildEditProfileRow(compact);
+        }
+        return _buildMenuRow(row, compact);
+      },
+    );
+  }
+
+  Widget _buildEditProfileRow(bool compact) {
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const ProfileUpdateScreen(),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 12 : 14,
+          vertical: compact ? 11 : 13,
+        ),
+        decoration: BoxDecoration(
+          color: kCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kBorder),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.person_outline, color: kAccent, size: compact ? 18 : 21),
+            SizedBox(width: compact ? 9 : 12),
+            const Expanded(
+              child: Text(
+                'Edit Profile',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: kSub, size: compact ? 18 : 20),
+          ],
+        ),
+      ),
     );
   }
 
@@ -403,6 +558,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (!mounted || image == null) return;
 
       setState(() => _profileImagePath = image.path);
+      await _uploadProfileImageToBackend(File(image.path));
+
       await ref
           .read(userSessionServiceProvider)
           .updateUserProfileImage(image.path);
