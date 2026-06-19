@@ -85,4 +85,13 @@ class UserSessionService {
   String? getUserProfileImage() {
     return _prefs.getString(_keyUserProfileImage);
   }
+
+  Future<void> updateUserProfileImage(String? profilePicture) async {
+    if (profilePicture == null) {
+      await _prefs.remove(_keyUserProfileImage);
+      return;
+    }
+
+    await _prefs.setString(_keyUserProfileImage, profilePicture);
+  }
 }
