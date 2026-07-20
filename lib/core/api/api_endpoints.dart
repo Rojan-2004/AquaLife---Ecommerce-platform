@@ -25,4 +25,6 @@ class ApiEndpoints {
   static const String authUploadProfilePicture = '/api/v1/auth/upload-profile-picture';
   static const String products = '/api/v1/products';
   static const String categories = '/api/v1/categories';
+  static const String cart = '/api/v1/cart';
+  static const String orders = '/api/v1/orders';
 }

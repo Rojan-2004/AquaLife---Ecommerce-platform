@@ -3,6 +3,7 @@ import 'package:aqua_life/core/api/api_endpoints.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';
 import 'package:aqua_life/features/catalogue/presentation/view/catalogue_screen.dart';
 import 'package:aqua_life/features/catalogue/presentation/view/decoration_screen.dart';
 import 'package:aqua_life/features/catalogue/presentation/view/equipment_screen.dart';
@@ -642,10 +643,22 @@ class HomeScreen extends ConsumerWidget {
                                     color: kAccent,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
-                                    Icons.add,
-                                    color: Colors.white,
-                                    size: 14,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    icon: const Icon(Icons.add, color: Colors.white, size: 14),
+                                    onPressed: () {
+                                      final pid = p['id'] as String?;
+                                      if (pid != null && context.mounted) {
+                                        ProviderScope.containerOf(context).read(cartViewModelProvider.notifier).addToCart(pid);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            backgroundColor: Color(0xFF112240),
+                                            content: Text('Added to cart', style: TextStyle(color: Colors.greenAccent)),
+                                            duration: Duration(seconds: 1),
+                                          ),
+                                        );
+                                      }
+                                    },
                                   ),
                                 ),
                               ],

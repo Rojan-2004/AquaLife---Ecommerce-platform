@@ -4,6 +4,7 @@ import 'package:aqua_life/core/api/api_endpoints.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';
 
 final catalogueRepoProvider = Provider<CatalogueRepository>((ref) {
   final apiClient = ref.read(apiClientProvider);
@@ -161,56 +162,92 @@ class CatalogueScreen extends ConsumerWidget {
                             children: state.products.map((p) {
                               final name = p['name'] as String? ?? '';
                               final price = p['price'] as num? ?? 0;
+                              final productId = p['id'] as String? ?? '';
                               final images = p['images'] as List<dynamic>?;
                               final imgUrl = (images != null && images.isNotEmpty) ? images.first as String : null;
                               final fullImgUrl = imgUrl != null ? '${ApiEndpoints.baseUrl}$imgUrl' : null;
 
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: kCard,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: kBorder),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                        child: fullImgUrl != null
-                                            ? CachedNetworkImage(
-                                                imageUrl: fullImgUrl,
-                                                width: double.infinity,
-                                                height: double.infinity,
-                                                fit: BoxFit.cover,
-                                                placeholder: (_, __) => Container(color: kCard, child: const Center(child: Icon(Icons.set_meal, color: Colors.white24))),
-                                                errorWidget: (_, __, ___) => Container(color: kCard, child: const Center(child: Icon(Icons.image_not_supported, color: Colors.white24))),
-                                              )
-                                            : Container(color: kCard, child: const Center(child: Icon(Icons.set_meal, color: Colors.white24))),
+                              return GestureDetector(
+                                onTap: () {
+                                  if (productId.isNotEmpty) {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => CatalogueScreen(initialProductId: productId)));
+                                  }
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: kCard,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: kBorder),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Stack(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                              child: fullImgUrl != null
+                                                  ? CachedNetworkImage(
+                                                      imageUrl: fullImgUrl,
+                                                      width: double.infinity,
+                                                      height: double.infinity,
+                                                      fit: BoxFit.cover,
+                                                      placeholder: (_, __) => Container(color: kCard, child: const Center(child: Icon(Icons.set_meal, color: Colors.white24))),
+                                                      errorWidget: (_, __, ___) => Container(color: kCard, child: const Center(child: Icon(Icons.image_not_supported, color: Colors.white24))),
+                                                    )
+                                                  : Container(color: kCard, child: const Center(child: Icon(Icons.set_meal, color: Colors.white24))),
+                                            ),
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: const BoxDecoration(color: Color(0xFF1A3A5C), shape: BoxShape.circle),
+                                                child: IconButton(
+                                                  padding: EdgeInsets.zero,
+                                                  icon: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 16),
+                                                  onPressed: () {
+                                                    if (productId.isNotEmpty) {
+                                                      ref.read(cartViewModelProvider.notifier).addToCart(productId);
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        const SnackBar(
+                                                          backgroundColor: Color(0xFF112240),
+                                                          content: Text('Added to cart', style: TextStyle(color: Colors.greenAccent)),
+                                                          duration: Duration(seconds: 1),
+                                                        ),
+                                                      );
+                                                    }
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(10),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'Rs. ${price.toStringAsFixed(0)}',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(color: kAccent, fontSize: 12, fontWeight: FontWeight.bold),
-                                          ),
-                                        ],
+                                      Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Rs. ${price.toStringAsFixed(0)}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(color: kAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               );
                             }).toList(),
