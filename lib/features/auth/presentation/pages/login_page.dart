@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aqua_life/app/theme/app_colors.dart';
+import 'package:aqua_life/features/auth/presentation/state/auth_state.dart';
 import 'package:aqua_life/features/auth/presentation/view_model/auth_view_model.dart';
 import 'package:aqua_life/features/auth/presentation/pages/register_page.dart';
 import 'package:aqua_life/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -27,6 +28,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authViewModelProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A1628),
       body: Container(
@@ -50,7 +53,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 const SizedBox(height: 30),
                 _buildLogo(),
                 const SizedBox(height: 30),
-                _buildLoginForm(),
+                 _buildLoginForm(authState),
                 const SizedBox(height: 20),
                 _buildDivider(),
                 const SizedBox(height: 20),
@@ -82,10 +85,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             ],
           ),
-          child: const Icon(
-            Icons.water_drop,
-            color: AppColors.primaryBlue,
-            size: 40,
+          child: Image.asset(
+            'assets/Aqua_life_logo.png',
+            height: 75,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Icon(Icons.water_drop, color: AppColors.primaryBlue, size: 40),
           ),
         ),
         const SizedBox(height: 12),
@@ -102,7 +106,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm(AuthState authState) {
     return Form(
       key: _loginFormKey,
       child: Column(
@@ -145,22 +149,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 _passwordController.text,
               );
 
-              final authState = ref.read(authViewModelProvider);
-              if (authState.isSuccess && mounted) {
+              final updatedState = ref.read(authViewModelProvider);
+              debugPrint('LOGIN PAGE: authState=$updatedState');
+              if (updatedState.isSuccess && mounted) {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => const DashboardPage()),
                 );
-              } else if (authState.error != null && mounted) {
+              } else if (updatedState.error != null && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: const Color(0xFF112240),
-                    content: Text(authState.error!, style: const TextStyle(color: Colors.redAccent)),
+                    content: Text(updatedState.error!, style: const TextStyle(color: Colors.redAccent)),
                   ),
                 );
               }
             }
-          }),
+          }, isLoading: authState.isLoading),
         ],
       ),
     );
@@ -223,12 +228,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  Widget _buildSubmitButton(String text, VoidCallback onPressed) {
+  Widget _buildSubmitButton(String text, VoidCallback onPressed, {bool isLoading = false}) {
     return SizedBox(
       width: double.infinity,
       height: 55,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1A3A5C),
           foregroundColor: AppColors.primaryBlue,
@@ -238,13 +243,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
           elevation: 0,
         ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryBlue),
+              )
+            : Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
   }

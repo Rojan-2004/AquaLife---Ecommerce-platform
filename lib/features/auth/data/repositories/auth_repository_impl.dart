@@ -11,6 +11,7 @@ import 'package:aqua_life/features/auth/domain/entities/auth_entity.dart';
 import 'package:aqua_life/features/auth/domain/repositories/auth_repository.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
@@ -120,9 +121,11 @@ class AuthRepository implements IAuthRepository {
     String email,
     String password,
   ) async {
+    debugPrint('LOGIN REPO: start email=$email connected=${await _networkInfo.isConnected}');
     if (await _networkInfo.isConnected) {
       try {
         final apiModel = await _authRemoteDataSource.login(email, password);
+        debugPrint('LOGIN REPO: remote result=$apiModel');
         if (apiModel != null) {
           if (apiModel.token != null) {
             await _tokenService.saveToken(apiModel.token!);
@@ -150,10 +153,13 @@ class AuthRepository implements IAuthRepository {
           await _authDataSource.register(authModel);
 
           final entity = apiModel.toEntity();
+          debugPrint('LOGIN REPO: success entity=$entity');
           return Right(entity);
         }
+        debugPrint('LOGIN REPO: apiModel is null');
         return const Left(ApiFailure(message: "Invalid email or password"));
       } on DioException catch (e) {
+        debugPrint('LOGIN REPO: dioException=${e.response?.data} ${e.message}');
         return Left(
           ApiFailure(
             message: _extractErrorMessage(e.response?.data, 'Login failed'),
@@ -161,10 +167,12 @@ class AuthRepository implements IAuthRepository {
           ),
         );
       } catch (e) {
+        debugPrint('LOGIN REPO: exception=$e');
         return const Left(ApiFailure(message: 'Login failed. Please try again.'));
       }
     } else {
       try {
+        debugPrint('LOGIN REPO: offline login');
         final model = await _authDataSource.login(email, password);
         if (model != null) {
           final entity = model.toEntity();
@@ -174,6 +182,7 @@ class AuthRepository implements IAuthRepository {
           LocalDatabaseFailure(message: "Invalid email or password"),
         );
       } catch (e) {
+        debugPrint('LOGIN REPO: offline exception=$e');
         return const Left(LocalDatabaseFailure(message: 'Unable to login offline'));
       }
     }

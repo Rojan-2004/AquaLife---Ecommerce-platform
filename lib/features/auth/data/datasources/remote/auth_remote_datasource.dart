@@ -2,6 +2,7 @@ import 'package:aqua_life/core/api/api_client.dart';
 import 'package:aqua_life/core/api/api_endpoints.dart';
 import 'package:aqua_life/features/auth/data/models/auth_api_model.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 abstract class IAuthRemoteDataSource {
@@ -18,19 +19,25 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
   @override
   Future<AuthApiModel?> login(String email, String password) async {
     try {
+      debugPrint('LOGIN REQUEST: email=$email to ${ApiEndpoints.authLogin}');
       final response = await _apiClient.post(
         ApiEndpoints.authLogin,
         data: {'email': email, 'password': password},
       );
+      debugPrint('LOGIN RESPONSE: status=${response.statusCode} data=${response.data}');
       if (response.statusCode == 200 && response.data != null) {
-        return AuthApiModel.fromJson(response.data);
+        final model = AuthApiModel.fromJson(response.data);
+        debugPrint('LOGIN PARSED: id=${model.id} email=${model.email} token=${model.token != null}');
+        return model;
       }
       return null;
     } on DioException catch (e) {
+      debugPrint('LOGIN DIO ERROR: ${e.response?.data} ${e.message}');
       throw Exception(
         _messageFromResponseData(e.response?.data, 'Login failed'),
       );
     } catch (e) {
+      debugPrint('LOGIN ERROR: $e');
       throw Exception('Login failed: $e');
     }
   }

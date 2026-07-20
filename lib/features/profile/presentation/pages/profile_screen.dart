@@ -4,11 +4,14 @@ import 'dart:io';
 import 'package:aqua_life/app/theme/app_theme.dart';
 import 'package:aqua_life/core/api/api_client.dart';
 import 'package:aqua_life/core/api/api_endpoints.dart';
+import 'package:aqua_life/core/services/storage/token_service.dart';
 import 'package:aqua_life/core/services/storage/user_session_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:aqua_life/features/auth/presentation/view_model/auth_view_model.dart';
+import 'package:aqua_life/features/splash/presentation/pages/splash_page.dart';
 import 'profile_update_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -421,35 +424,55 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildLogoutRow(bool compact) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 11 : 13,
-      ),
-      decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kBorder),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.logout_rounded, color: kDanger, size: 21),
-          SizedBox(width: compact ? 9 : 12),
-          const Expanded(
-            child: Text(
-              'Log Out',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: kDanger,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+    return InkWell(
+      onTap: _logout,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 12 : 14,
+          vertical: compact ? 11 : 13,
+        ),
+        decoration: BoxDecoration(
+          color: kCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kBorder),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.logout_rounded, color: kDanger, size: 21),
+            SizedBox(width: compact ? 9 : 12),
+            const Expanded(
+              child: Text(
+                'Log Out',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: kDanger,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-          Icon(Icons.chevron_right, color: kDanger, size: compact ? 18 : 20),
-        ],
+            Icon(Icons.chevron_right, color: kDanger, size: compact ? 18 : 20),
+          ],
+        ),
       ),
+    );
+  }
+
+  Future<void> _logout() async {
+    final authViewModel = ref.read(authViewModelProvider.notifier);
+    final userSession = ref.read(userSessionServiceProvider);
+    final tokenService = ref.read(tokenServiceProvider);
+
+    await authViewModel.logout();
+    await userSession.clearUserSession();
+    await tokenService.clearTokens();
+
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const SplashPage()),
+      (route) => false,
     );
   }
 

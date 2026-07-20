@@ -102,10 +102,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
             ],
           ),
-          child: Icon(
-            Icons.water_drop,
-            color: AppColors.primaryBlue,
-            size: compact ? 34 : 40,
+          child: Image.asset(
+            'assets/Aqua_life_logo.png',
+            height: compact ? 64 : 75,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Icon(Icons.water_drop, color: AppColors.primaryBlue, size: compact ? 34 : 40),
           ),
         ),
         SizedBox(height: compact ? 8 : 12),

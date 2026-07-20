@@ -35,26 +35,11 @@ class _SplashPageState extends ConsumerState<SplashPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Beautiful glowing logo
-              Container(
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF112240),
-                  border: Border.all(color: const Color(0xFF1E3A5C), width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryBlue.withValues(alpha: 0.35),
-                      blurRadius: 40,
-                      spreadRadius: 8,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.water_drop,
-                  size: 60,
-                  color: AppColors.primaryBlue,
-                ),
+              Image.asset(
+                'assets/Aqua_life_logo.png',
+                height: 100,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(Icons.water_drop, size: 60, color: AppColors.primaryBlue),
               ),
               const SizedBox(height: 30),
               const Text(

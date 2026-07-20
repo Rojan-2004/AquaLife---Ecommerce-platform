@@ -4,14 +4,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:aqua_life/core/error/failures.dart';
 import 'package:aqua_life/features/auth/domain/entities/auth_entity.dart';
 import 'package:aqua_life/features/auth/domain/usecases/login_usecase.dart';
+import 'package:aqua_life/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:aqua_life/features/auth/domain/usecases/register_usecase.dart';
 import 'package:aqua_life/features/auth/presentation/state/auth_state.dart';
 import 'package:aqua_life/features/auth/presentation/view_model/auth_view_model.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockLoginUsecase extends Mock implements LoginUsecase {}
 
 class MockRegisterUsecase extends Mock implements RegisterUsecase {}
+
+class MockLogoutUsecase extends Mock implements LogoutUsecase {}
 
 class FakeLoginParams extends Fake implements LoginParams {}
 
@@ -20,6 +24,7 @@ class FakeRegisterParams extends Fake implements RegisterParams {}
 void main() {
   late MockLoginUsecase mockLoginUsecase;
   late MockRegisterUsecase mockRegisterUsecase;
+  late MockLogoutUsecase mockLogoutUsecase;
   late ProviderContainer container;
 
   setUpAll(() {
@@ -30,11 +35,15 @@ void main() {
   setUp(() {
     mockLoginUsecase = MockLoginUsecase();
     mockRegisterUsecase = MockRegisterUsecase();
+    mockLogoutUsecase = MockLogoutUsecase();
+
+    SharedPreferences.setMockInitialValues({});
 
     container = ProviderContainer(
       overrides: [
         loginUsecaseProvider.overrideWithValue(mockLoginUsecase),
         registerUsecaseProvider.overrideWithValue(mockRegisterUsecase),
+        logoutUsecaseProvider.overrideWithValue(mockLogoutUsecase),
       ],
     );
   });

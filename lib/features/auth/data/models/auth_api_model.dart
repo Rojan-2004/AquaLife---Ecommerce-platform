@@ -10,6 +10,7 @@ class AuthApiModel {
   final String? profilePicture;
   final String? token;
   final String? refreshToken;
+  final String? role;
 
   AuthApiModel({
     this.id,
@@ -21,6 +22,7 @@ class AuthApiModel {
     this.profilePicture,
     this.token,
     this.refreshToken,
+    this.role,
   });
 
   Map<String, dynamic> toJson() {
@@ -34,6 +36,9 @@ class AuthApiModel {
     };
     if (profilePicture != null && profilePicture!.isNotEmpty) {
       json['profilePicture'] = profilePicture;
+    }
+    if (role != null && role!.isNotEmpty) {
+      json['role'] = role;
     }
     return json;
   }
@@ -63,6 +68,7 @@ class AuthApiModel {
         data['profilePicture'],
         name: 'profilePicture',
       ),
+      role: _asStringOrNull(data['role'], name: 'role'),
       token: _asStringOrNull(root['token'] ?? data['token'], name: 'token'),
       refreshToken: _asStringOrNull(
         root['refreshToken'] ?? data['refreshToken'],
@@ -119,6 +125,7 @@ class AuthApiModel {
       username: username,
       password: password,
       profilePicture: profilePicture,
+      role: role,
     );
   }
 
@@ -130,6 +137,7 @@ class AuthApiModel {
       password: entity.password,
       username: entity.username,
       profilePicture: entity.profilePicture,
+      role: entity.role,
     );
   }
 
