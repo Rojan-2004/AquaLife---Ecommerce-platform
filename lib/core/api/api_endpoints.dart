@@ -27,4 +27,5 @@ class ApiEndpoints {
   static const String categories = '/api/v1/categories';
   static const String cart = '/api/v1/cart';
   static const String orders = '/api/v1/orders';
+  static const String reviews = '/api/v1/reviews';
 }

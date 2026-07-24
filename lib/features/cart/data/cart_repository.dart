@@ -43,6 +43,18 @@ class CartRepository {
     return false;
   }
 
+  Future<bool> updateQuantity(String cartItemId, int quantity) async {
+    final res = await _apiClient.put(
+      ApiEndpoints.cart,
+      data: {'cartItemId': cartItemId, 'quantity': quantity},
+    );
+    if (res.statusCode == 200 && res.data != null) {
+      final data = res.data as Map<String, dynamic>;
+      return data['success'] == true;
+    }
+    return false;
+  }
+
   Future<bool> clearCart() async {
     final items = await fetchCart();
     bool allDeleted = true;

@@ -186,6 +186,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           content: const Text('Order placed successfully!', style: TextStyle(color: Colors.greenAccent)),
         ),
       );
+      ref.read(cartViewModelProvider.notifier).refresh();
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

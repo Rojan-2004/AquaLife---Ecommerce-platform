@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';
+import 'package:aqua_life/features/product_detail/presentation/pages/product_detail_screen.dart';
 import 'package:aqua_life/features/catalogue/presentation/view/catalogue_screen.dart';
 import 'package:aqua_life/features/catalogue/presentation/view/decoration_screen.dart';
 import 'package:aqua_life/features/catalogue/presentation/view/equipment_screen.dart';
@@ -154,9 +155,18 @@ class HomeScreen extends ConsumerWidget {
               colors: [Color(0xFF0D2137), Color(0xFF1A3A5C)],
             ),
           ),
-          child: narrow
-              ? _buildCompactBannerContent(name, price, fullImageUrl, compact)
-              : Row(
+              child: narrow
+                  ? _buildCompactBannerContent(name, price, fullImageUrl, compact, product != null && product['id'] != null
+                      ? () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailScreen(productId: product['id'] as String),
+                            ),
+                          );
+                        }
+                      : null)
+                  : Row(
                   children: [
                     Expanded(
                       child: Padding(
@@ -197,7 +207,16 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 12),
                                 ElevatedButton(
-                                  onPressed: () {},
+                                  onPressed: product != null && product['id'] != null
+                                      ? () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => ProductDetailScreen(productId: product['id'] as String),
+                                            ),
+                                          );
+                                        }
+                                      : null,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: kAccent,
                                     foregroundColor: Colors.white,
@@ -239,7 +258,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompactBannerContent(String name, num price, String? imageUrl, bool compact) {
+  Widget _buildCompactBannerContent(String name, num price, String? imageUrl, bool compact, VoidCallback? onTap) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -296,7 +315,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: onTap,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kAccent,
                       foregroundColor: Colors.white,
@@ -555,7 +574,7 @@ class HomeScreen extends ConsumerWidget {
                 onTap: () {
                   final pid = p['id'] as String?;
                   if (pid != null) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => CatalogueScreen(initialProductId: pid)));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(productId: pid)));
                   }
                 },
                 child: Container(

@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aqua_life/features/order/data/order_repository.dart';
-import 'package:aqua_life/features/order/domain/entities/order_model.dart';
 import 'package:aqua_life/features/order/presentation/state/order_state.dart';
 
 final orderViewModelProvider = StateNotifierProvider<OrderViewModel, OrderState>((ref) {

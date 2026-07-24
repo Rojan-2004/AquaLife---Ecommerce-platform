@@ -28,14 +28,7 @@ class CartViewModel extends StateNotifier<CartState> {
     try {
       final item = await _repo.addToCart(productId, quantity: quantity);
       if (item != null) {
-        final existingIndex = state.items.indexWhere((i) => i.productId == productId);
-        if (existingIndex >= 0) {
-          final updated = List<CartItemModel>.from(state.items);
-          updated[existingIndex] = item;
-          state = state.copyWith(items: updated);
-        } else {
-          state = state.copyWith(items: [...state.items, item]);
-        }
+        await loadCart();
       }
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -67,9 +60,12 @@ class CartViewModel extends StateNotifier<CartState> {
         state = state.copyWith(error: 'Only ${item.stock} in stock');
         return;
       }
-      final updated = List<CartItemModel>.from(state.items);
-      updated[index] = item.copyWith(quantity: quantity);
-      state = state.copyWith(items: updated);
+      try {
+        await _repo.updateQuantity(cartItemId, quantity);
+        await loadCart();
+      } catch (e) {
+        state = state.copyWith(error: e.toString());
+      }
     }
   }
 
