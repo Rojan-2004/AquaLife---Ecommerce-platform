@@ -1,16 +1,11 @@
 import 'package:aqua_life/app/theme/app_theme.dart';
-import 'package:aqua_life/core/api/api_endpoints.dart';
+import 'package:aqua_life/app/constants/api_constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';
 import 'package:aqua_life/features/product_detail/presentation/pages/product_detail_screen.dart';
 import 'package:aqua_life/features/catalogue/presentation/view/catalogue_screen.dart';
-import 'package:aqua_life/features/catalogue/presentation/view/decoration_screen.dart';
-import 'package:aqua_life/features/catalogue/presentation/view/equipment_screen.dart';
-import 'package:aqua_life/features/catalogue/presentation/view/fish_screen.dart';
-import 'package:aqua_life/features/catalogue/presentation/view/food_screen.dart';
-import 'package:aqua_life/features/catalogue/presentation/view/plants_screen.dart';
 import 'package:aqua_life/features/home/presentation/view_model/home_view_model.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -139,7 +134,7 @@ class HomeScreen extends ConsumerWidget {
     final price = product?['price'] as num? ?? 0;
     final images = product?['images'] as List<dynamic>?;
     final imageUrl = (images != null && images.isNotEmpty) ? images.first as String : null;
-    final fullImageUrl = imageUrl != null ? '${ApiEndpoints.baseUrl}$imageUrl' : null;
+    final fullImageUrl = ApiConstants.getFullImageUrl(imageUrl);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -404,6 +399,14 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildCategoriesSection(BuildContext context, bool compact, List<Map<String, dynamic>> categories) {
+    const dashboardCategories = [
+      {'name': 'Fish'},
+      {'name': 'Food'},
+      {'name': 'Plants'},
+      {'name': 'Decoration'},
+      {'name': 'Equipment'},
+    ];
+    final cats = dashboardCategories;
     IconData iconFor(String name) {
       switch (name.toLowerCase()) {
         case 'fish':
@@ -466,75 +469,54 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 12),
-        if (categories.isEmpty)
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: compact ? 8 : 12,
-            mainAxisSpacing: compact ? 8 : 12,
-            childAspectRatio: compact ? 1.55 : 2,
-            children: List.generate(4, (_) => Container(
-              decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(12), border: Border.all(color: kBorder)),
-            )),
-          )
-        else
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: compact ? 8 : 12,
-            mainAxisSpacing: compact ? 8 : 12,
-            childAspectRatio: compact ? 1.55 : 2,
-            children: categories.map((cat) {
-              final name = cat['name'] as String? ?? '';
-              return GestureDetector(
-                onTap: () {
-                  final routes = {
-                    'Fish': const FishScreen(),
-                    'Food': const FoodScreen(),
-                    'Equipment': const EquipmentScreen(),
-                    'Plants': const PlantsScreen(),
-                    'Decoration': const DecorationScreen(),
-                  };
-                  final screen = routes[name] ?? CatalogueScreen(initialCategory: name);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-                },
-                child: Container(
-                  padding: EdgeInsets.all(compact ? 9 : 12),
-                  decoration: BoxDecoration(
-                    color: kCard,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: kBorder),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(iconFor(name), color: kAccent, size: compact ? 20 : 24),
-                      SizedBox(width: compact ? 7 : 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: compact ? 12 : 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: compact ? 8 : 12,
+          mainAxisSpacing: compact ? 8 : 12,
+          childAspectRatio: compact ? 1.55 : 2,
+          children: cats.map((cat) {
+            final name = cat['name'] as String? ?? '';
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => CatalogueScreen(initialCategory: name)));
+              },
+              child: Container(
+                padding: EdgeInsets.all(compact ? 9 : 12),
+                decoration: BoxDecoration(
+                  color: kCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: kBorder),
                 ),
-              );
-            }).toList(),
-          ),
+                child: Row(
+                  children: [
+                    Icon(iconFor(name), color: kAccent, size: compact ? 20 : 24),
+                    SizedBox(width: compact ? 7 : 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: compact ? 12 : 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ],
     );
   }
@@ -568,7 +550,7 @@ class HomeScreen extends ConsumerWidget {
               final price = p['price'] as num? ?? 0;
               final images = p['images'] as List<dynamic>?;
               final imgUrl = (images != null && images.isNotEmpty) ? images.first as String : null;
-              final fullImgUrl = imgUrl != null ? '${ApiEndpoints.baseUrl}$imgUrl' : null;
+              final fullImgUrl = ApiConstants.getFullImageUrl(imgUrl);
 
               return GestureDetector(
                 onTap: () {
