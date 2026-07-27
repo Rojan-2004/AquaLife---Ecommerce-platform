@@ -1,9 +1,10 @@
-import 'package:aqua_life/app/theme/app_theme.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';
-import 'package:aqua_life/features/order/presentation/view_model/order_view_model.dart';
-import 'package:aqua_life/features/order/presentation/pages/order_history_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:aqua_life/app/theme/app_theme.dart';
+import 'package:aqua_life/app/services/api_service.dart';
+import 'package:aqua_life/features/order/presentation/pages/order_success_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -14,192 +15,268 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _provinceController = TextEditingController();
-  final _districtController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _streetController = TextEditingController();
-  final _postalCodeController = TextEditingController();
-  final _landmarkController = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _provinceCtrl = TextEditingController();
+  final _districtCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
+  final _streetCtrl = TextEditingController();
+  final _postalCodeCtrl = TextEditingController();
+  final _landmarkCtrl = TextEditingController();
 
-  bool _isPlacingOrder = false;
+  List<dynamic> _cartItems = [];
+  double _subtotal = 0;
+  bool _isLoading = true;
+  bool _placing = false;
 
   @override
-  void dispose() {
-    _fullNameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _provinceController.dispose();
-    _districtController.dispose();
-    _cityController.dispose();
-    _streetController.dispose();
-    _postalCodeController.dispose();
-    _landmarkController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _fetchCartData();
   }
 
   @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _provinceCtrl.dispose();
+    _districtCtrl.dispose();
+    _cityCtrl.dispose();
+    _streetCtrl.dispose();
+    _postalCodeCtrl.dispose();
+    _landmarkCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchCartData() async {
+    try {
+      // 1. Populate user info from preferences
+      final prefs = await SharedPreferences.getInstance();
+      final userDataStr = prefs.getString('user_data');
+      if (userDataStr != null) {
+        final userData = jsonDecode(userDataStr);
+        _nameCtrl.text = userData['name'] ?? userData['fullName'] ?? '';
+        _emailCtrl.text = userData['email'] ?? '';
+      }
+
+      // 2. Fetch cart total
+      final res = await ApiService.get('/api/cart');
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final list = data['items'] ?? data['data'] ?? data;
+        if (list is List) {
+          double sum = 0;
+          for (var item in list) {
+            final prod = item['product'] ?? {};
+            final price = prod['price'] as num? ?? 0;
+            final quantity = item['quantity'] as int? ?? 1;
+            sum += price * quantity;
+          }
+          setState(() {
+            _cartItems = list;
+            _subtotal = sum;
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _placeOrder() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _placing = true);
+
+    try {
+      final res = await ApiService.post('/api/orders', {
+        'shippingAddress': {
+          'fullName': _nameCtrl.text.trim(),
+          'email': _emailCtrl.text.trim(),
+          'phone': _phoneCtrl.text.trim(),
+          'province': _provinceCtrl.text.trim(),
+          'district': _districtCtrl.text.trim(),
+          'city': _cityCtrl.text.trim(),
+          'street': _streetCtrl.text.trim(),
+          'postalCode': _postalCodeCtrl.text.trim(),
+          'landmark': _landmarkCtrl.text.trim(),
+        }
+      });
+
+      setState(() => _placing = false);
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final data = jsonDecode(res.body);
+        final orderId = data['orderId'] ?? data['data']?['id'] ?? data['id'] ?? 'OrderPlaced';
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text('Order Placed Successfully!'),
+            backgroundColor: const Color(0xFF112240),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ));
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => OrderSuccessScreen(orderId: orderId.toString())),
+          );
+        }
+      } else {
+        final data = jsonDecode(res.body);
+        throw Exception(data['message'] ?? 'Failed to place order');
+      }
+    } catch (e) {
+      setState(() => _placing = false);
+      if (mounted) {
+        final errMsg = e.toString().replaceAll('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(errMsg),
+          backgroundColor: const Color(0xFF7f1d1d),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    }
+  }
+
+  double get total => _subtotal + 50;
+
+  @override
   Widget build(BuildContext context) {
-    final cartState = ref.watch(cartViewModelProvider);
-    final compact = MediaQuery.sizeOf(context).width < 360;
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0A1628),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
+      );
+    }
 
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: const Color(0xFF0A1628),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('Checkout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
-      body: cartState.isEmpty
-          ? const Center(child: Text('Your cart is empty', style: TextStyle(color: Colors.white54)))
-          : SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: compact ? 12 : 16),
-              child: Form(
-                key: _formKey,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Shipping Address', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              _buildField(_nameCtrl, 'Full Name', Icons.person_outline),
+              const SizedBox(height: 12),
+              _buildField(_emailCtrl, 'Email Address', Icons.email_outlined, keyboardType: TextInputType.emailAddress),
+              const SizedBox(height: 12),
+              _buildField(_phoneCtrl, 'Phone Number', Icons.phone_android_outlined, keyboardType: TextInputType.phone),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _buildField(_provinceCtrl, 'Province', Icons.map_outlined)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildField(_districtCtrl, 'District', Icons.pin_drop_outlined)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _buildField(_cityCtrl, 'City', Icons.location_city_outlined)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildField(_postalCodeCtrl, 'Postal Code', Icons.local_post_office_outlined, keyboardType: TextInputType.number)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildField(_streetCtrl, 'Street Address', Icons.home_outlined),
+              const SizedBox(height: 12),
+              _buildField(_landmarkCtrl, 'Landmark (Optional)', Icons.place_outlined, required: false),
+              const SizedBox(height: 24),
+              const Text('Order Summary', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF112240),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF1E3A5C)),
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionTitle('Shipping Address', compact),
-                    SizedBox(height: compact ? 10 : 12),
-                    _buildTextField(_fullNameController, 'Full Name', Icons.person_outline, compact, validator: (v) => v == null || v.isEmpty ? 'Required' : null),
-                    SizedBox(height: compact ? 8 : 10),
-                    _buildTextField(_emailController, 'Email', Icons.email_outlined, compact, keyboardType: TextInputType.emailAddress, validator: (v) => v == null || v.isEmpty ? 'Required' : null),
-                    SizedBox(height: compact ? 8 : 10),
-                    _buildTextField(_phoneController, 'Phone', Icons.phone_outlined, compact, keyboardType: TextInputType.phone, validator: (v) => v == null || v.isEmpty ? 'Required' : null),
-                    SizedBox(height: compact ? 8 : 10),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(child: _buildTextField(_provinceController, 'Province', Icons.location_city_outlined, compact, validator: (v) => v == null || v.isEmpty ? 'Required' : null)),
-                        SizedBox(width: compact ? 8 : 10),
-                        Expanded(child: _buildTextField(_districtController, 'District', Icons.map_outlined, compact, validator: (v) => v == null || v.isEmpty ? 'Required' : null)),
+                        const Text('Subtotal', style: TextStyle(color: Color(0xFF7AB8CC))),
+                        Text('Rs. ${_subtotal.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    SizedBox(height: compact ? 8 : 10),
-                    _buildTextField(_cityController, 'City', Icons.location_on_outlined, compact, validator: (v) => v == null || v.isEmpty ? 'Required' : null),
-                    SizedBox(height: compact ? 8 : 10),
-                    _buildTextField(_streetController, 'Street Address', Icons.home, compact, validator: (v) => v == null || v.isEmpty ? 'Required' : null),
-                    SizedBox(height: compact ? 8 : 10),
-                    Row(
+                    const SizedBox(height: 8),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(child: _buildTextField(_postalCodeController, 'Postal Code', Icons.markunread_mailbox_outlined, compact, keyboardType: TextInputType.number, validator: (v) => v == null || v.isEmpty ? 'Required' : null)),
-                        SizedBox(width: compact ? 8 : 10),
-                        Expanded(child: _buildTextField(_landmarkController, 'Landmark', Icons.place_outlined, compact)),
+                        Text('Delivery Fee', style: TextStyle(color: Color(0xFF7AB8CC))),
+                        Text('Rs. 50', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    SizedBox(height: compact ? 14 : 18),
-                    _buildSectionTitle('Order Summary', compact),
-                    SizedBox(height: compact ? 10 : 12),
-                    _buildSummaryRow('Subtotal', 'Rs. ${_format(cartState.subtotal)}', compact),
-                    SizedBox(height: compact ? 6 : 8),
-                    _buildSummaryRow('Shipping', cartState.shipping == 0 ? 'Free' : 'Rs. ${_format(cartState.shipping)}', compact),
-                    SizedBox(height: compact ? 6 : 8),
-                    const Divider(color: kBorder),
-                    _buildSummaryRow('Total', 'Rs. ${_format(cartState.total)}', compact, emphasized: true),
-                    SizedBox(height: compact ? 14 : 18),
-                    SizedBox(
-                      width: double.infinity,
-                      height: compact ? 48 : 54,
-                      child: ElevatedButton(
-                        onPressed: _isPlacingOrder ? null : _placeOrder,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kAccent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                        child: _isPlacingOrder
-                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Text('Place Order', style: TextStyle(fontSize: compact ? 14 : 16, fontWeight: FontWeight.bold)),
-                      ),
+                    const Divider(color: Color(0xFF1E3A5C), height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text('Rs. ${total.toStringAsFixed(0)}', style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 18, fontWeight: FontWeight.bold)),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _placing ? null : _placeOrder,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00B4D8),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: _placing
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Place Order', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildSectionTitle(String title, bool compact) {
-    return Text(title, style: TextStyle(color: Colors.white, fontSize: compact ? 15 : 17, fontWeight: FontWeight.bold));
-  }
-
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, bool compact, {TextInputType? keyboardType, String? Function(String?)? validator}) {
+  Widget _buildField(TextEditingController ctrl, String hint, IconData icon, {TextInputType? keyboardType, bool required = true}) {
     return Container(
       decoration: BoxDecoration(
-        color: kCard,
+        color: const Color(0xFF112240),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorder),
+        border: Border.all(color: const Color(0xFF1E3A5C)),
       ),
       child: TextFormField(
-        controller: controller,
+        controller: ctrl,
         keyboardType: keyboardType,
-        validator: validator,
-        style: TextStyle(color: Colors.white, fontSize: compact ? 13 : 14),
+        style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: kSub, fontSize: compact ? 12 : 13),
-          prefixIcon: Icon(icon, color: kSub, size: compact ? 18 : 20),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          filled: true,
-          fillColor: Colors.transparent,
-          contentPadding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14, vertical: compact ? 10 : 12),
+          hintStyle: const TextStyle(color: Color(0xFF4A6B82)),
+          prefixIcon: Icon(icon, color: const Color(0xFF7AB8CC)),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
+        validator: required
+            ? (v) => v == null || v.trim().isEmpty ? '$hint is required' : null
+            : null,
       ),
     );
-  }
-
-  Widget _buildSummaryRow(String label, String value, bool compact, {bool emphasized = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: emphasized ? Colors.white : kSub, fontSize: compact ? 13 : 14, fontWeight: emphasized ? FontWeight.bold : FontWeight.w600))),
-        Text(value, maxLines: 1, style: TextStyle(color: Colors.white, fontSize: compact ? 13 : 14, fontWeight: emphasized ? FontWeight.bold : FontWeight.w600)),
-      ],
-    );
-  }
-
-  Future<void> _placeOrder() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isPlacingOrder = true);
-
-    final shippingAddress = {
-      'fullName': _fullNameController.text.trim(),
-      'email': _emailController.text.trim(),
-      'phone': _phoneController.text.trim(),
-      'province': _provinceController.text.trim(),
-      'district': _districtController.text.trim(),
-      'city': _cityController.text.trim(),
-      'street': _streetController.text.trim(),
-      'postalCode': _postalCodeController.text.trim(),
-      'landmark': _landmarkController.text.trim(),
-    };
-
-    final orderId = await ref.read(orderViewModelProvider.notifier).placeOrder(shippingAddress);
-    setState(() => _isPlacingOrder = false);
-
-    if (orderId != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: kCard,
-          content: const Text('Order placed successfully!', style: TextStyle(color: Colors.greenAccent)),
-        ),
-      );
-      ref.read(cartViewModelProvider.notifier).refresh();
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: kCard,
-          content: Text(ref.read(orderViewModelProvider).error ?? 'Failed to place order', style: const TextStyle(color: Colors.redAccent)),
-        ),
-      );
-    }
-  }
-
-  String _format(int value) {
-    if (value == 0) return '0';
-    return value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match.group(1)},');
   }
 }
