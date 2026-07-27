@@ -3,7 +3,7 @@ import 'dart:io';
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static String get _localIp => '192.168.100.101';
+  static String get _localIp => '10.2.14.27';
 
   static final String baseUrl = Platform.isAndroid
       ? 'http://$_localIp:3000'
@@ -22,7 +22,8 @@ class ApiEndpoints {
   static const String authLogout = '/api/v1/auth/logout';
   static const String authRefreshToken = '/api/v1/auth/refresh-token';
   static const String authUpdateProfile = '/api/v1/auth/update-profile';
-  static const String authUploadProfilePicture = '/api/v1/auth/upload-profile-picture';
+  static const String authUploadProfilePicture =
+      '/api/v1/auth/upload-profile-picture';
   static const String products = '/api/v1/products';
   static const String categories = '/api/v1/categories';
   static const String cart = '/api/v1/cart';
