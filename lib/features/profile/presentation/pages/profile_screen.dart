@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:aqua_life/app/theme/app_theme.dart';
 import 'package:aqua_life/app/constants/api_constants.dart';
 import 'package:aqua_life/app/services/api_service.dart';
@@ -71,6 +72,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('session_cookie');
     await prefs.remove('user_data');
+
+    final secureStorage = const FlutterSecureStorage();
+    await secureStorage.delete(key: 'auth_token');
+    await secureStorage.delete(key: 'refresh_token');
 
     if (mounted) {
       Navigator.pushAndRemoveUntil(

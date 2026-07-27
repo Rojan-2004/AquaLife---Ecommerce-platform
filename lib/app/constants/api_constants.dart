@@ -3,11 +3,17 @@ import 'dart:io';
 class ApiConstants {
   ApiConstants._();
 
-  static String get _localIp => '10.2.14.27';
+  static String get _localIp {
+    if (Platform.isAndroid) {
+      return '10.0.2.2';
+    }
+    if (Platform.isIOS) {
+      return '127.0.0.1';
+    }
+    return '192.168.100.101';
+  }
 
-  static final String baseUrl = Platform.isAndroid
-      ? 'http://$_localIp:3000'
-      : 'http://$_localIp:3000';
+  static final String baseUrl = 'http://$_localIp:3000';
 
   static String getFullImageUrl(String? imgPath) {
     if (imgPath == null || imgPath.isEmpty) return '';
