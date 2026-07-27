@@ -1,126 +1,204 @@
-import 'package:aqua_life/app/theme/app_theme.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aqua_life/core/api/api_endpoints.dart';
-import 'package:aqua_life/features/order/presentation/view_model/order_view_model.dart';
+import 'package:aqua_life/app/theme/app_theme.dart';
+import 'package:aqua_life/app/constants/api_constants.dart';
+import 'package:aqua_life/app/services/api_service.dart';
 
-class OrderHistoryScreen extends ConsumerWidget {
+class OrderHistoryScreen extends ConsumerStatefulWidget {
   const OrderHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final orderState = ref.watch(orderViewModelProvider);
-    final compact = MediaQuery.sizeOf(context).width < 360;
+  ConsumerState<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: kBg,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text('My Orders', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(orderViewModelProvider.notifier).loadOrders(),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: compact ? 12 : 16),
-          child: orderState.isLoading && orderState.orders.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: kAccent))
-              : orderState.error != null
-                  ? Center(child: Text('Failed to load: ${orderState.error}', style: const TextStyle(color: Colors.white54)))
-                  : orderState.orders.isEmpty
-                      ? Center(child: Text('No orders yet', style: TextStyle(color: kSub, fontSize: compact ? 14 : 16)))
-                      : Column(
-                          children: orderState.orders.map((order) {
-                            return Container(
-                              margin: EdgeInsets.only(bottom: compact ? 10 : 12),
-                              padding: EdgeInsets.all(compact ? 12 : 14),
-                              decoration: BoxDecoration(
-                                color: kCard,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: kBorder),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          '#${order.id.substring(0, 8)}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(color: Colors.white, fontSize: compact ? 13 : 14, fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: compact ? 3 : 4),
-                                        decoration: BoxDecoration(
-                                          color: _statusColor(order.status),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          order.status.toUpperCase(),
-                                          maxLines: 1,
-                                          style: TextStyle(color: Colors.white, fontSize: compact ? 9 : 10, fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: compact ? 6 : 8),
-                                  Text('Rs. ${order.total.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match.group(1)},')}', style: TextStyle(color: kAccent, fontSize: compact ? 14 : 16, fontWeight: FontWeight.bold)),
-                                  SizedBox(height: compact ? 4 : 6),
-                                  ...order.items.map((item) {
-                                    final imgUrl = item.image != null ? '${ApiEndpoints.baseUrl}${item.image}' : null;
-                                    return Padding(
-                                      padding: EdgeInsets.only(top: compact ? 6 : 8),
-                                      child: Row(
-                                        children: [
-                                          if (imgUrl != null)
-                                            ClipRRect(
-                                              borderRadius: BorderRadius.circular(8),
-                                              child: CachedNetworkImage(
-                                                imageUrl: imgUrl,
-                                                width: compact ? 36 : 44,
-                                                height: compact ? 36 : 44,
-                                                fit: BoxFit.cover,
-                                                placeholder: (_, __) => Container(width: compact ? 36 : 44, height: compact ? 36 : 44, color: kMid),
-                                                errorWidget: (_, __, ___) => Container(width: compact ? 36 : 44, height: compact ? 36 : 44, color: kMid, child: Icon(Icons.image_not_supported, size: compact ? 14 : 16, color: kSub)),
-                                              ),
-                                            ),
-                                          SizedBox(width: compact ? 8 : 10),
-                                          Expanded(
-                                            child: Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white, fontSize: compact ? 12 : 13)),
-                                          ),
-                                          Text('x${item.quantity}', style: TextStyle(color: kSub, fontSize: compact ? 11 : 12)),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-        ),
-      ),
-    );
+class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
+  List<dynamic> _orders = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchOrders();
+  }
+
+  Future<void> _fetchOrders() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Fetch orders history or stats containing orders
+      final res = await ApiService.get('/api/orders');
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final list = data['data'] ?? data['orders'] ?? data;
+        setState(() {
+          _orders = list is List ? list : [];
+          _isLoading = false;
+        });
+      } else {
+        throw Exception();
+      }
+    } catch (_) {
+      setState(() {
+        _error = 'Failed to load order history';
+        _isLoading = false;
+      });
+    }
   }
 
   Color _statusColor(String status) {
-    switch (status) {
-      case 'delivered':
-        return Colors.green;
+    switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
-      case 'processing':
-        return Colors.blue;
+        return const Color(0xFFfbbf24);
+      case 'shipped':
+        return const Color(0xFF818cf8);
+      case 'delivered':
+        return const Color(0xFF4ade80);
       case 'cancelled':
-        return Colors.red;
+        return const Color(0xFFf87171);
       default:
-        return kSub;
+        return Colors.white54;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0A1628),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A1628),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Order History', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+      body: _error != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.wifi_off, color: Colors.white24, size: 48),
+                  const SizedBox(height: 12),
+                  const Text('Failed to load order history', style: TextStyle(color: Colors.white54)),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _fetchOrders,
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3A5C)),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : _orders.isEmpty
+              ? const Center(
+                  child: Text('No orders placed yet', style: TextStyle(color: Color(0xFF7AB8CC))),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _orders.length,
+                  itemBuilder: (context, index) {
+                    final order = _orders[index];
+                    final orderId = order['id'] ?? order['_id'] ?? '';
+                    final shortId = orderId.length > 8 ? orderId.substring(0, 8) : orderId;
+                    final total = order['total'] ?? order['amount'] ?? 0;
+                    final status = order['status'] ?? 'pending';
+                    final dateStr = order['createdAt'] ?? '';
+                    final items = order['items'] as List<dynamic>? ?? [];
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF112240),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF1E3A5C)),
+                      ),
+                      child: ExpansionTile(
+                        iconColor: const Color(0xFF00B4D8),
+                        collapsedIconColor: const Color(0xFF7AB8CC),
+                        title: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Order #$shortId',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _statusColor(status).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: _statusColor(status)),
+                              ),
+                              child: Text(
+                                status.toUpperCase(),
+                                style: TextStyle(color: _statusColor(status), fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            'Total: Rs. ${total.toStringAsFixed(0)}',
+                            style: const TextStyle(color: Color(0xFF00B4D8), fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            color: const Color(0xFF0D1F35),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (dateStr.isNotEmpty) ...[
+                                  Text('Date: ${dateStr.split("T").first}', style: const TextStyle(color: Color(0xFF7AB8CC), fontSize: 12)),
+                                  const SizedBox(height: 8),
+                                ],
+                                const Text('Items:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                const SizedBox(height: 6),
+                                ...items.map((item) {
+                                  final prod = item['product'] ?? {};
+                                  final name = prod['name'] ?? 'Aquarium Product';
+                                  final qty = item['quantity'] ?? 1;
+                                  final price = item['price'] ?? prod['price'] ?? 0;
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '$name (x$qty)',
+                                            style: const TextStyle(color: Color(0xFF7AB8CC), fontSize: 12),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Rs. ${(price * qty).toStringAsFixed(0)}',
+                                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+    );
   }
 }
