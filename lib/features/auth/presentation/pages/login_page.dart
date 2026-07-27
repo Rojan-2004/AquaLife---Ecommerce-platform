@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aqua_life/app/theme/app_colors.dart';
-import 'package:aqua_life/features/auth/presentation/state/auth_state.dart';
-import 'package:aqua_life/features/auth/presentation/view_model/auth_view_model.dart';
+import 'package:aqua_life/app/constants/api_constants.dart';
 import 'package:aqua_life/features/auth/presentation/pages/register_page.dart';
 import 'package:aqua_life/features/dashboard/presentation/pages/dashboard_page.dart';
 
@@ -18,6 +20,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -26,10 +29,151 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
+  Future<void> _handleLogin() async {
+    if (!_loginFormKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      String? sessionCookie;
+      Map<String, dynamic>? userData;
+
+      try {
+        // Try NextAuth flow first
+        final csrfRes = await http.get(Uri.parse('${ApiConstants.baseUrl}/api/auth/csrf'));
+        if (csrfRes.statusCode == 200) {
+          final csrfData = jsonDecode(csrfRes.body);
+          final csrfToken = csrfData['csrfToken'];
+          if (csrfToken != null) {
+            final loginRes = await http.post(
+              Uri.parse('${ApiConstants.baseUrl}/api/auth/callback/credentials'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'csrfToken': csrfToken,
+                'email': _emailController.text,
+                'password': _passwordController.text,
+                'json': 'true',
+              }),
+            );
+
+            final setCookie = loginRes.headers['set-cookie'];
+            if (setCookie != null) {
+              final cookies = setCookie.split(RegExp(r',(?=[^;]+(?:;|$))'));
+              for (var cookie in cookies) {
+                if (cookie.contains('next-auth.session-token') || cookie.contains('sessionToken')) {
+                  sessionCookie = cookie.split(';').first;
+                  break;
+                }
+              }
+              sessionCookie ??= setCookie.split(';').first;
+            }
+          }
+        }
+      } catch (_) {
+        // NextAuth endpoints not active/supported
+      }
+
+      // Fallback to Express backend login if NextAuth yielded no cookie
+      if (sessionCookie == null) {
+        final loginRes = await http.post(
+          Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': _emailController.text,
+            'password': _passwordController.text,
+          }),
+        );
+
+        if (loginRes.statusCode == 200) {
+          final data = jsonDecode(loginRes.body);
+          final token = data['token'] ?? data['data']?['token'];
+          userData = data['data'] ?? data['user'];
+          if (token != null) {
+            sessionCookie = 'token=$token';
+          }
+        } else {
+          final data = jsonDecode(loginRes.body);
+          throw Exception(data['message'] ?? 'Invalid email or password');
+        }
+      }
+
+      if (sessionCookie == null) {
+        throw Exception('Invalid email or password');
+      }
+
+      // Save session cookie
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('session_cookie', sessionCookie);
+
+      // Validate session & check role
+      if (userData == null) {
+        final sessionRes = await http.get(
+          Uri.parse('${ApiConstants.baseUrl}/api/auth/session'),
+          headers: {'Cookie': sessionCookie},
+        );
+
+        if (sessionRes.statusCode == 200) {
+          final sessionData = jsonDecode(sessionRes.body);
+          userData = sessionData['user'];
+        } else {
+          // Fallback to /api/v1/auth/me
+          final meRes = await http.get(
+            Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/me'),
+            headers: {
+              'Cookie': sessionCookie,
+              'Authorization': 'Bearer ${sessionCookie.replaceAll('token=', '')}'
+            },
+          );
+          if (meRes.statusCode == 200) {
+            final meData = jsonDecode(meRes.body);
+            userData = meData['data'] ?? meData;
+          }
+        }
+      }
+
+      if (userData != null) {
+        final role = userData['role'];
+        if (role == 'admin') {
+          await prefs.remove('session_cookie');
+          throw Exception('Admin access is web-only');
+        }
+
+        await prefs.setString('user_data', jsonEncode(userData));
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text('Login successful!'),
+            backgroundColor: const Color(0xFF112240),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const DashboardPage()),
+          );
+        }
+        return;
+      }
+      throw Exception('Failed to retrieve user session');
+    } catch (e) {
+      if (mounted) {
+        final errMsg = e.toString().replaceAll('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(errMsg),
+          backgroundColor: const Color(0xFF7f1d1d),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authViewModelProvider);
-
     return Scaffold(
       backgroundColor: const Color(0xFF0A1628),
       body: Container(
@@ -53,7 +197,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 const SizedBox(height: 30),
                 _buildLogo(),
                 const SizedBox(height: 30),
-                 _buildLoginForm(authState),
+                _buildLoginForm(),
                 const SizedBox(height: 20),
                 _buildDivider(),
                 const SizedBox(height: 20),
@@ -79,7 +223,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             border: Border.all(color: const Color(0xFF1E3A5C), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                color: AppColors.primaryBlue.withOpacity(0.25),
                 blurRadius: 20,
                 spreadRadius: 4,
               ),
@@ -106,7 +250,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  Widget _buildLoginForm(AuthState authState) {
+  Widget _buildLoginForm() {
     return Form(
       key: _loginFormKey,
       child: Column(
@@ -141,31 +285,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildSubmitButton('Log In', () async {
-            if (_loginFormKey.currentState!.validate()) {
-              final authViewModel = ref.read(authViewModelProvider.notifier);
-              await authViewModel.login(
-                _emailController.text,
-                _passwordController.text,
-              );
-
-              final updatedState = ref.read(authViewModelProvider);
-              debugPrint('LOGIN PAGE: authState=$updatedState');
-              if (updatedState.isSuccess && mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const DashboardPage()),
-                );
-              } else if (updatedState.error != null && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: const Color(0xFF112240),
-                    content: Text(updatedState.error!, style: const TextStyle(color: Colors.redAccent)),
-                  ),
-                );
-              }
-            }
-          }, isLoading: authState.isLoading),
+          _buildSubmitButton('Log In', _handleLogin, isLoading: _isLoading),
         ],
       ),
     );
@@ -229,25 +349,39 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _buildSubmitButton(String text, VoidCallback onPressed, {bool isLoading = false}) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
       height: 55,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00B4D8), Color(0xFF0077B6)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00B4D8).withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1A3A5C),
-          foregroundColor: AppColors.primaryBlue,
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Color(0xFF1E3A5C)),
           ),
-          elevation: 0,
         ),
         child: isLoading
             ? const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryBlue),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
             : Text(
                 text,
