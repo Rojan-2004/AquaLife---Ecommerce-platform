@@ -148,13 +148,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
         await prefs.setString('user_data', jsonEncode(userData));
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Login successful!'),
-            backgroundColor: const Color(0xFF112240),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Login successful!'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const DashboardPage()),
@@ -182,18 +182,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF0A1628),
-              Color(0xFF0D2137),
+              cs.surface,
+              cs.surface.withValues(alpha: 0.8),
             ],
-            stops: [0.0, 0.4],
+            stops: const [0.0, 0.4],
           ),
         ),
         child: SafeArea(
@@ -220,6 +221,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _buildLogo() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         Container(
@@ -227,11 +229,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           height: 75,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF112240),
-            border: Border.all(color: const Color(0xFF1E3A5C), width: 1.5),
+            color: cs.surface,
+            border: Border.all(color: cs.outline, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryBlue.withOpacity(0.25),
+                color: cs.primary.withValues(alpha: 0.25),
                 blurRadius: 20,
                 spreadRadius: 4,
               ),
@@ -241,17 +243,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             'assets/Aqua_life_logo.png',
             height: 75,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(Icons.water_drop, color: AppColors.primaryBlue, size: 40),
+            errorBuilder: (_, __, ___) => Icon(Icons.water_drop, color: cs.primary, size: 40),
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'AQUALIFE',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             letterSpacing: 3.0,
-            color: Colors.white,
+            color: cs.onSurface,
           ),
         ),
       ],
@@ -308,26 +310,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     bool isPasswordVisible = false,
     VoidCallback? onTogglePassword,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1F35),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
+        border: Border.all(color: cs.outline),
       ),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
         obscureText: isPassword && !isPasswordVisible,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: cs.onSurface),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF4A6B82)),
-          prefixIcon: Icon(icon, color: const Color(0xFF7AB8CC)),
+          hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.48)),
+          prefixIcon: Icon(icon, color: cs.onSurface.withValues(alpha: 0.72)),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
                     isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                    color: const Color(0xFF7AB8CC),
+                    color: cs.onSurface.withValues(alpha: 0.72),
                   ),
                   onPressed: onTogglePassword,
                 )
@@ -361,15 +364,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       width: double.infinity,
       height: 55,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF00B4D8), Color(0xFF0077B6)],
+        gradient: LinearGradient(
+          colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00B4D8).withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -405,25 +408,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget _buildDivider() {
     return Row(
       children: [
-        const Expanded(child: Divider(color: Color(0xFF1E3A5C))),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+        Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'OR',
-            style: TextStyle(color: Color(0xFF4A6B82)),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.48)),
           ),
         ),
-        const Expanded(child: Divider(color: Color(0xFF1E3A5C))),
+        Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
       ],
     );
   }
 
   Widget _buildSocialLogin() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
-        const Text(
+        Text(
           'Continue with',
-          style: TextStyle(color: Color(0xFF7AB8CC), fontSize: 14),
+          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72), fontSize: 14),
         ),
         const SizedBox(height: 16),
         Row(
@@ -440,22 +444,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               "Don't have an account? ",
-              style: TextStyle(color: Color(0xFF7AB8CC), fontSize: 14),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72), fontSize: 14),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RegisterPage()),
-                );
-              },
-              child: const Text(
-                'Sign Up',
-                style: TextStyle(color: AppColors.primaryBlue, fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-            ),
+             TextButton(
+               onPressed: () {
+                 Navigator.push(
+                   context,
+                   MaterialPageRoute(builder: (context) => const RegisterPage()),
+                 );
+               },
+               child: Text(
+                 'Sign Up',
+                 style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 14, fontWeight: FontWeight.bold),
+               ),
+             ),
           ],
         ),
       ],
@@ -463,13 +467,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _buildSocialButton(IconData icon, String label, Color color) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: 80,
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF112240),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
+        border: Border.all(color: cs.outline),
       ),
       child: Column(
         children: [
@@ -477,7 +482,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(color: Color(0xFF7AB8CC), fontSize: 12),
+            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72), fontSize: 12),
           ),
         ],
       ),

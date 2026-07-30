@@ -21,8 +21,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -37,15 +38,16 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildBottomNav() {
+    final cs = Theme.of(context).colorScheme;
     return BottomNavigationBar(
-      backgroundColor:      const Color(0xFF0D1F35),
-      selectedItemColor:    const Color(0xFF00B4D8),
-      unselectedItemColor:  const Color(0xFF4A6B82),
-      type:                 BottomNavigationBarType.fixed,
-      currentIndex:         _currentIndex,
-      onTap:                _selectTab,
-      selectedFontSize:     11,
-      unselectedFontSize:   11,
+      backgroundColor: cs.tertiary,
+      selectedItemColor: cs.primary,
+      unselectedItemColor: cs.onSurface.withValues(alpha: 0.6),
+      type: BottomNavigationBarType.fixed,
+      currentIndex: _currentIndex,
+      onTap: _selectTab,
+      selectedFontSize: 11,
+      unselectedFontSize: 11,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home_outlined),          activeIcon: Icon(Icons.home),          label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined),  activeIcon: Icon(Icons.shopping_cart), label: 'Cart'),

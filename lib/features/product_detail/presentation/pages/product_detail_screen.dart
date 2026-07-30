@@ -149,14 +149,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         ref.read(cartViewModelProvider.notifier).loadCart();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Added to cart'),
-            backgroundColor: const Color(0xFF112240),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ));
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Added to cart'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
       } else {
         throw Exception();
       }
@@ -188,14 +188,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       if (res.statusCode == 200 || res.statusCode == 201) {
         _commentCtrl.clear();
         _fetchReviews();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Review submitted successfully!'),
-            backgroundColor: const Color(0xFF112240),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ));
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Review submitted successfully!'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
       } else {
         final data = jsonDecode(res.body);
         throw Exception(data['error'] ?? data['message'] ?? 'Failed to submit review');
@@ -226,28 +226,29 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (_isLoadingProduct) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A1628),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
+      return Scaffold(
+        backgroundColor: cs.surface,
+        body: Center(child: CircularProgressIndicator(color: cs.primary)),
       );
     }
 
     if (_error != null || _product == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0A1628),
-        appBar: AppBar(title: const Text('Product Details')),
+        backgroundColor: cs.surface,
+        appBar: AppBar(title: Text('Product Details', style: TextStyle(color: cs.onSurface))),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.wifi_off, color: Colors.white24, size: 48),
+              Icon(Icons.wifi_off, color: cs.onSurface.withValues(alpha: 0.24), size: 48),
               const SizedBox(height: 12),
-              const Text('Failed to load product details', style: TextStyle(color: Colors.white54)),
+              Text('Failed to load product details', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54))),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: _fetchProductDetails,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3A5C)),
+                style: ElevatedButton.styleFrom(backgroundColor: cs.tertiary),
                 child: const Text('Retry'),
               ),
             ],
@@ -269,14 +270,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final compact = MediaQuery.sizeOf(context).width < 360;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Product Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Product Details', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon: Icon(_isWishlisted ? Icons.favorite : Icons.favorite_border, color: _isWishlisted ? Colors.red : Colors.white),
+            icon: Icon(_isWishlisted ? Icons.favorite : Icons.favorite_border, color: _isWishlisted ? Colors.red : cs.onSurface),
             onPressed: _toggleWishlist,
           ),
         ],
@@ -285,28 +286,28 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
-            if (fullImgUrl != null)
-              Image.network(
-                fullImgUrl,
-                width: double.infinity,
-                height: compact ? 220 : 280,
-                fit: BoxFit.cover,
-                loadingBuilder: (_, child, progress) => progress == null
-                  ? child
-                  : const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00B4D8))),
-                errorBuilder: (_, __, ___) => Container(
-                  height: compact ? 220 : 280,
-                  color: const Color(0xFF112240),
-                  child: const Icon(Icons.image_not_supported, color: Colors.white24, size: 48),
-                ),
-              )
-            else
-              Container(
-                height: compact ? 220 : 280,
-                color: const Color(0xFF112240),
-                child: const Center(child: Icon(Icons.image, color: Colors.white24, size: 48)),
-              ),
+             // Image
+             if (fullImgUrl != null)
+               Image.network(
+                 fullImgUrl,
+                 width: double.infinity,
+                 height: compact ? 220 : 280,
+                 fit: BoxFit.cover,
+                 loadingBuilder: (_, child, progress) => progress == null
+                   ? child
+                   : const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00B4D8))),
+                 errorBuilder: (_, __, ___) => Container(
+                   height: compact ? 220 : 280,
+                   color: cs.surface,
+                   child: Icon(Icons.image_not_supported, color: cs.onSurface.withValues(alpha: 0.24), size: 48),
+                 ),
+               )
+             else
+               Container(
+                 height: compact ? 220 : 280,
+                 color: cs.surface,
+                 child: Center(child: Icon(Icons.image, color: cs.onSurface.withValues(alpha: 0.24), size: 48)),
+               ),
             
             Padding(
               padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: 16),
@@ -326,116 +327,116 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     const SizedBox(height: 10),
                   ],
 
-                  // Title & Stock
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      _buildStockIndicator(stock),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
+                   // Title & Stock
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     children: [
+                       Expanded(
+                         child: Text(
+                           name,
+                           style: TextStyle(color: cs.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
+                         ),
+                       ),
+                       _buildStockIndicator(stock),
+                     ],
+                   ),
+                   const SizedBox(height: 10),
 
-                  // Price
-                  Text(
-                    'Rs. ${price.toStringAsFixed(0)}',
-                    style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
+                   // Price
+                   Text(
+                     'Rs. ${price.toStringAsFixed(0)}',
+                     style: TextStyle(color: cs.primary, fontSize: 20, fontWeight: FontWeight.bold),
+                   ),
+                   const SizedBox(height: 16),
 
-                  // Description
-                  const Text('Description', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Text(
-                    description,
-                    style: const TextStyle(color: Color(0xFF7AB8CC), fontSize: 14, height: 1.5),
-                  ),
-                  const SizedBox(height: 20),
+                   // Description
+                   Text('Description', style: TextStyle(color: cs.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
+                   const SizedBox(height: 6),
+                   Text(
+                     description,
+                     style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72), fontSize: 14, height: 1.5),
+                   ),
+                   const SizedBox(height: 20),
 
-                  // Stepper & Add to Cart
-                  if (stock > 0) ...[
-                    Row(
-                      children: [
-                        const Text('Quantity', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                        const Spacer(),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF112240),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF1E3A5C)),
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove, color: Color(0xFF00B4D8)),
-                                onPressed: () {
-                                  if (_quantity > 1) {
-                                    setState(() => _quantity--);
-                                  }
-                                },
-                              ),
-                              Text('$_quantity', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                              IconButton(
-                                icon: const Icon(Icons.add, color: Color(0xFF00B4D8)),
-                                onPressed: () {
-                                  if (_quantity < stock) {
-                                    setState(() => _quantity++);
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                   // Stepper & Add to Cart
+                   if (stock > 0) ...[
+                     Row(
+                       children: [
+                         Text('Quantity', style: TextStyle(color: cs.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
+                         const Spacer(),
+                         Container(
+                           decoration: BoxDecoration(
+                             color: cs.surface,
+                             borderRadius: BorderRadius.circular(12),
+                             border: Border.all(color: cs.outline),
+                           ),
+                           child: Row(
+                             children: [
+                               IconButton(
+                                 icon: Icon(Icons.remove, color: cs.primary),
+                                 onPressed: () {
+                                   if (_quantity > 1) {
+                                     setState(() => _quantity--);
+                                   }
+                                 },
+                               ),
+                               Text('$_quantity', style: TextStyle(color: cs.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
+                               IconButton(
+                                 icon: Icon(Icons.add, color: cs.primary),
+                                 onPressed: () {
+                                   if (_quantity < stock) {
+                                     setState(() => _quantity++);
+                                   }
+                                 },
+                               ),
+                             ],
+                           ),
+                         ),
+                       ],
+                     ),
+                     const SizedBox(height: 20),
+                   ],
 
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 55,
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.add_shopping_cart),
-                            label: const Text('Add to Cart', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            onPressed: stock > 0 ? _addToCart : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00B4D8),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
+                   // Action Buttons
+                   Row(
+                     children: [
+                       Expanded(
+                         child: SizedBox(
+                           height: 55,
+                           child: ElevatedButton.icon(
+                             icon: const Icon(Icons.add_shopping_cart),
+                             label: const Text('Add to Cart', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                             onPressed: stock > 0 ? _addToCart : null,
+                             style: ElevatedButton.styleFrom(
+                               backgroundColor: cs.primary,
+                               foregroundColor: Colors.black,
+                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                             ),
+                           ),
+                         ),
+                       ),
+                     ],
+                   ),
+                   const SizedBox(height: 32),
 
-                  // Reviews List
-                  const Text('Customer Reviews', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  if (_isLoadingReviews)
-                    const Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8)))
-                  else if (_reviews.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF112240),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF1E3A5C)),
-                      ),
-                      child: const Center(
-                        child: Text('No reviews for this product yet.', style: TextStyle(color: Color(0xFF7AB8CC))),
-                      ),
-                    )
+                   // Reviews List
+                   Text('Customer Reviews', style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
+                   const SizedBox(height: 12),
+                   if (_isLoadingReviews)
+                     Center(child: CircularProgressIndicator(color: cs.primary))
+                   else if (_reviews.isEmpty)
+                     Container(
+                       width: double.infinity,
+                       padding: const EdgeInsets.all(16),
+                       decoration: BoxDecoration(
+                         color: cs.surface,
+                         borderRadius: BorderRadius.circular(16),
+                         border: Border.all(color: cs.outline),
+                       ),
+                       child: Center(
+                         child: Text('No reviews for this product yet.', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72))),
+                       ),
+                     )
                   else
                     ListView.builder(
                       shrinkWrap: true,
@@ -450,109 +451,109 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         final comment = rev['comment'] ?? rev['text'] ?? '';
                         final rating = rev['rating'] as int? ?? 5;
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF112240),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF1E3A5C)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: const Color(0xFF1A3A5C),
-                                    radius: 14,
-                                    child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U', style: const TextStyle(color: Colors.white, fontSize: 12)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                  const Spacer(),
-                                  Row(
-                                    children: List.generate(5, (starIdx) => Icon(
-                                      starIdx < rating ? Icons.star : Icons.star_border,
-                                      color: Colors.amber,
-                                      size: 14,
-                                    )),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              if (comment.isNotEmpty)
-                                Text(comment, style: const TextStyle(color: Color(0xFF7AB8CC), fontSize: 13)),
-                            ],
-                          ),
-                        );
+                         return Container(
+                           margin: const EdgeInsets.only(bottom: 10),
+                           padding: const EdgeInsets.all(12),
+                           decoration: BoxDecoration(
+                             color: cs.surface,
+                             borderRadius: BorderRadius.circular(12),
+                             border: Border.all(color: cs.outline),
+                           ),
+                           child: Column(
+                             crossAxisAlignment: CrossAxisAlignment.start,
+                             children: [
+                               Row(
+                                 children: [
+                                   CircleAvatar(
+                                     backgroundColor: cs.tertiary,
+                                     radius: 14,
+                                     child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U', style: TextStyle(color: cs.onSurface, fontSize: 12)),
+                                   ),
+                                   const SizedBox(width: 8),
+                                   Text(name, style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
+                                   const Spacer(),
+                                   Row(
+                                     children: List.generate(5, (starIdx) => Icon(
+                                       starIdx < rating ? Icons.star : Icons.star_border,
+                                       color: Colors.amber,
+                                       size: 14,
+                                     )),
+                                   ),
+                                 ],
+                               ),
+                               const SizedBox(height: 6),
+                               if (comment.isNotEmpty)
+                                 Text(comment, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72), fontSize: 13)),
+                             ],
+                           ),
+                         );
                       },
                     ),
-                  const SizedBox(height: 24),
+                   const SizedBox(height: 24),
 
-                  // Submit Review Form
-                  const Text('Write a Review', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF112240),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF1E3A5C)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Text('Rating: ', style: TextStyle(color: Colors.white)),
-                            const SizedBox(width: 8),
-                            Row(
-                              children: List.generate(5, (idx) {
-                                final starRating = idx + 1;
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() => _submitRating = starRating);
-                                  },
-                                  child: Icon(
-                                    idx < _submitRating ? Icons.star : Icons.star_border,
-                                    color: Colors.amber,
-                                    size: 28,
-                                  ),
-                                );
-                              }),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _commentCtrl,
-                          style: const TextStyle(color: Colors.white),
-                          maxLines: 3,
-                          decoration: const InputDecoration(
-                            hintText: 'Share your thoughts about this product...',
-                            hintStyle: TextStyle(color: Color(0xFF4A6B82)),
-                            border: InputBorder.none,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _submittingReview ? null : _submitReview,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00B4D8),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            child: _submittingReview
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Text('Submit Review', style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                   // Submit Review Form
+                   Text('Write a Review', style: TextStyle(color: cs.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
+                   const SizedBox(height: 12),
+                   Container(
+                     padding: const EdgeInsets.all(16),
+                     decoration: BoxDecoration(
+                       color: cs.surface,
+                       borderRadius: BorderRadius.circular(16),
+                       border: Border.all(color: cs.outline),
+                     ),
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Row(
+                           children: [
+                             Text('Rating: ', style: TextStyle(color: cs.onSurface)),
+                             const SizedBox(width: 8),
+                             Row(
+                               children: List.generate(5, (idx) {
+                                 final starRating = idx + 1;
+                                 return GestureDetector(
+                                   onTap: () {
+                                     setState(() => _submitRating = starRating);
+                                   },
+                                   child: Icon(
+                                     idx < _submitRating ? Icons.star : Icons.star_border,
+                                     color: Colors.amber,
+                                     size: 28,
+                                   ),
+                                 );
+                               }),
+                             ),
+                           ],
+                         ),
+                         const SizedBox(height: 12),
+                         TextField(
+                           controller: _commentCtrl,
+                           style: TextStyle(color: cs.onSurface),
+                           maxLines: 3,
+                           decoration: InputDecoration(
+                             hintText: 'Share your thoughts about this product...',
+                             hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.48)),
+                             border: InputBorder.none,
+                           ),
+                         ),
+                         const SizedBox(height: 12),
+                         SizedBox(
+                           width: double.infinity,
+                           child: ElevatedButton(
+                             onPressed: _submittingReview ? null : _submitReview,
+                             style: ElevatedButton.styleFrom(
+                               backgroundColor: cs.primary,
+                               foregroundColor: Colors.black,
+                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                             ),
+                             child: _submittingReview
+                                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                 : const Text('Submit Review', style: TextStyle(fontWeight: FontWeight.bold)),
+                           ),
+                         ),
+                       ],
+                     ),
+                   ),
                 ],
               ),
             ),

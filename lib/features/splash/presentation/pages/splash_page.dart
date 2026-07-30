@@ -21,47 +21,50 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF0A1628), Color(0xFF0D2137), Color(0xFF0A1628)],
+            colors: isDark
+                ? const [Color(0xFF0A1628), Color(0xFF0D2137), Color(0xFF0A1628)]
+                : [cs.surface, cs.surface.withValues(alpha: 0.8), cs.surface],
           ),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Beautiful glowing logo
               Image.asset(
                 'assets/Aqua_life_logo.png',
                 height: 100,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(Icons.water_drop, size: 60, color: AppColors.primaryBlue),
+                errorBuilder: (_, __, ___) => Icon(Icons.water_drop, size: 60, color: cs.primary),
               ),
               const SizedBox(height: 30),
-              const Text(
+              Text(
                 'AQUALIFE',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 3.0,
-                  color: Colors.white,
+                  color: cs.onSurface,
                 ),
               ),
               const SizedBox(height: 5),
-              const Text(
+              Text(
                 'Your Aquatic Companion',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF7AB8CC),
+                  color: cs.onSurface.withValues(alpha: 0.72),
                 ),
               ),
               const SizedBox(height: 60),
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
               ),
             ],
           ),

@@ -91,7 +91,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: const Text('Order Placed Successfully!'),
-            backgroundColor: const Color(0xFF112240),
+            backgroundColor: Theme.of(context).colorScheme.surface,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ));
@@ -124,20 +124,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cartState = ref.watch(cartViewModelProvider);
     final subtotal = cartState.items.fold<double>(0, (sum, item) => sum + (item.price * item.quantity));
     final total = subtotal > 0 ? subtotal + 50 : 0.0;
+    final cs = Theme.of(context).colorScheme;
 
     if (_isLoading || cartState.isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A1628),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
+      return Scaffold(
+        backgroundColor: cs.surface,
+        body: Center(child: CircularProgressIndicator(color: cs.primary)),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Checkout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Checkout', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -146,7 +147,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Shipping Address', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Shipping Address', style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               _buildField(_nameCtrl, 'Full Name', Icons.person_outline),
               const SizedBox(height: 12),
@@ -174,38 +175,38 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               const SizedBox(height: 12),
               _buildField(_landmarkCtrl, 'Landmark (Optional)', Icons.place_outlined, required: false),
               const SizedBox(height: 24),
-              const Text('Order Summary', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Order Summary', style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF112240),
+                  color: cs.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF1E3A5C)),
+                  border: Border.all(color: cs.outline),
                 ),
                 child: Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Subtotal', style: TextStyle(color: Color(0xFF7AB8CC))),
-                        Text('Rs. ${subtotal.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('Subtotal', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72))),
+                        Text('Rs. ${subtotal.toStringAsFixed(0)}', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Delivery Fee', style: TextStyle(color: Color(0xFF7AB8CC))),
-                        Text('Rs. 50', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const Divider(color: Color(0xFF1E3A5C), height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                        Text('Rs. ${total.toStringAsFixed(0)}', style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('Delivery Fee', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72))),
+                        Text('Rs. 50', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    Divider(color: cs.outline, height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Total', style: TextStyle(color: cs.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text('Rs. ${total.toStringAsFixed(0)}', style: TextStyle(color: cs.primary, fontSize: 18, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
@@ -218,8 +219,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: ElevatedButton(
                   onPressed: _placing ? null : _placeOrder,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00B4D8),
-                    foregroundColor: Colors.white,
+                    backgroundColor: cs.primary,
+                    foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _placing
@@ -235,20 +236,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildField(TextEditingController ctrl, String hint, IconData icon, {TextInputType? keyboardType, bool required = true}) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF112240),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
+        border: Border.all(color: cs.outline),
       ),
       child: TextFormField(
         controller: ctrl,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: cs.onSurface),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF4A6B82)),
-          prefixIcon: Icon(icon, color: const Color(0xFF7AB8CC)),
+          hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.48)),
+          prefixIcon: Icon(icon, color: cs.onSurface.withValues(alpha: 0.72)),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),

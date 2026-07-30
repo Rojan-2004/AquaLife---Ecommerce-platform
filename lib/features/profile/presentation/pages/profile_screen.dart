@@ -10,6 +10,7 @@ import 'package:aqua_life/features/auth/presentation/pages/login_page.dart';
 import 'package:aqua_life/features/wishlist/presentation/pages/wishlist_screen.dart';
 import 'package:aqua_life/features/order/presentation/pages/order_history_screen.dart';
 import 'package:aqua_life/features/profile/presentation/pages/profile_update_screen.dart';
+import 'package:aqua_life/core/theme/theme_mode.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -107,108 +108,109 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       case 'cancelled':
         return const Color(0xFFf87171);
       default:
-        return Colors.white54;
+        return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A1628),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
+      return Scaffold(
+        backgroundColor: cs.surface,
+        body: Center(child: CircularProgressIndicator(color: cs.primary)),
       );
     }
 
     final compact = MediaQuery.sizeOf(context).width < 360;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('My Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('My Profile', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Header Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF112240),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF1E3A5C)),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: const Color(0xFF1A3A5C),
-                    child: Text(
-                      _getInitials(_fullName),
-                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(_fullName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text(_email, style: const TextStyle(color: Color(0xFF7AB8CC), fontSize: 14)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+             // Header Card
+             Container(
+               padding: const EdgeInsets.all(16),
+               decoration: BoxDecoration(
+                 color: cs.surface,
+                 borderRadius: BorderRadius.circular(16),
+                 border: Border.all(color: cs.outline),
+               ),
+               child: Row(
+                 children: [
+                   CircleAvatar(
+                     radius: 30,
+                     backgroundColor: cs.tertiary,
+                     child: Text(
+                       _getInitials(_fullName),
+                       style: TextStyle(color: cs.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
+                     ),
+                   ),
+                   const SizedBox(width: 16),
+                   Expanded(
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Text(_fullName, style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
+                         const SizedBox(height: 4),
+                         Text(_email, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72), fontSize: 14)),
+                       ],
+                     ),
+                   ),
+                 ],
+               ),
+             ),
             const SizedBox(height: 20),
 
-            // Stats row
-            Row(
-              children: [
-                Expanded(child: _buildStatCard('Total Orders', '$_ordersCount')),
-                const SizedBox(width: 10),
-                Expanded(child: _buildStatCard('Wishlist Items', '$_wishlistCount')),
-                const SizedBox(width: 10),
-                Expanded(child: _buildStatCard('My Reviews', '$_reviewsCount')),
-              ],
-            ),
+             // Stats row
+             Row(
+               children: [
+                 Expanded(child: _buildStatCard('Total Orders', '$_ordersCount', cs)),
+                 const SizedBox(width: 10),
+                 Expanded(child: _buildStatCard('Wishlist Items', '$_wishlistCount', cs)),
+                 const SizedBox(width: 10),
+                 Expanded(child: _buildStatCard('My Reviews', '$_reviewsCount', cs)),
+               ],
+             ),
             const SizedBox(height: 24),
 
-            // Recent Orders list
-            if (_recentOrders.isNotEmpty) ...[
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Recent Orders', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
+             // Recent Orders list
+             if (_recentOrders.isNotEmpty) ...[
+               Align(
+                 alignment: Alignment.centerLeft,
+                 child: Text('Recent Orders', style: TextStyle(color: cs.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
+               ),
               const SizedBox(height: 10),
               ..._recentOrders.take(5).map((order) {
                 final orderId = order['id'] ?? order['_id'] ?? '';
                 final shortId = orderId.length > 8 ? orderId.substring(0, 8) : orderId;
                 final status = order['status'] ?? 'pending';
-                final total = order['total'] ?? 0;
+                 final total = order['total'] ?? 0;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF112240),
+                    color: cs.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF1E3A5C)),
+                    border: Border.all(color: cs.outline),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Order #$shortId', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Text('Rs. ${total.toStringAsFixed(0)}', style: const TextStyle(color: Color(0xFF00B4D8))),
+                      Text('Order #$shortId', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
+                      Text('Rs. ${total.toStringAsFixed(0)}', style: TextStyle(color: cs.primary)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _statusColor(status).withOpacity(0.15),
+                          color: _statusColor(status).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: _statusColor(status)),
                         ),
@@ -224,28 +226,64 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const SizedBox(height: 20),
             ],
 
-            // Menu Items
-            _buildMenuItem(Icons.history, 'Order History', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
-            }),
-            const SizedBox(height: 10),
-            _buildMenuItem(Icons.favorite_outline, 'Wishlist', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
-            }),
-            const SizedBox(height: 10),
-            _buildMenuItem(Icons.edit, 'Edit Profile', () async {
-              await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileUpdateScreen()));
-              _loadProfileData();
-            }),
-            const SizedBox(height: 10),
-            _buildMenuItem(Icons.help_outline, 'Help & Support', () {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: const Text('Help section: Please check our web support or chat with AI Assistant.'),
-                backgroundColor: const Color(0xFF112240),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ));
-            }),
+             // Menu Items
+             _buildMenuItem(Icons.history, 'Order History', cs, () {
+               Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
+             }),
+             const SizedBox(height: 10),
+             _buildMenuItem(Icons.favorite_outline, 'Wishlist', cs, () {
+               Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
+             }),
+             const SizedBox(height: 10),
+             _buildMenuItem(Icons.edit, 'Edit Profile', cs, () async {
+               await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileUpdateScreen()));
+               _loadProfileData();
+             }),
+             const SizedBox(height: 10),
+             Container(
+               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+               decoration: BoxDecoration(
+                 color: cs.surface,
+                 borderRadius: BorderRadius.circular(12),
+                 border: Border.all(color: cs.outline),
+               ),
+               child: Row(
+                 children: [
+                   Icon(Icons.dark_mode_outlined, color: cs.primary),
+                   const SizedBox(width: 16),
+                   Expanded(
+                     child: Text(
+                       'Dark Mode',
+                       style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold),
+                     ),
+                   ),
+                   Consumer(
+                     builder: (context, ref, _) {
+                       final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
+                       return Switch(
+                         value: isDark,
+                         onChanged: (value) {
+                           ref.read(themeModeProvider.notifier).setThemeMode(
+                             value ? ThemeMode.dark : ThemeMode.light,
+                           );
+                         },
+                         activeThumbColor: kAccent,
+                         activeTrackColor: const Color(0xFF1A3A5C),
+                       );
+                     },
+                   ),
+                 ],
+               ),
+             ),
+             const SizedBox(height: 10),
+             _buildMenuItem(Icons.help_outline, 'Help & Support', cs, () {
+               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                 content: const Text('Help section: Please check our web support or chat with AI Assistant.'),
+                 backgroundColor: cs.surface,
+                 behavior: SnackBarBehavior.floating,
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+               ));
+             }),
             const SizedBox(height: 24),
 
             // Logout Button
@@ -269,40 +307,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value) {
+  Widget _buildStatCard(String label, String value, ColorScheme cs) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF112240),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
+        border: Border.all(color: cs.outline),
       ),
       child: Column(
         children: [
-          Text(value, style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(value, style: TextStyle(color: cs.primary, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF7AB8CC), fontSize: 11)),
+          Text(label, textAlign: TextAlign.center, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72), fontSize: 11)),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap) {
+  Widget _buildMenuItem(IconData icon, String title, ColorScheme cs, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF112240),
+          color: cs.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF1E3A5C)),
+          border: Border.all(color: cs.outline),
         ),
         child: Row(
           children: [
-            Icon(icon, color: const Color(0xFF00B4D8)),
+            Icon(icon, color: cs.primary),
             const SizedBox(width: 16),
-            Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-            const Icon(Icons.arrow_forward_ios, color: Color(0xFF7AB8CC), size: 16),
+            Expanded(child: Text(title, style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold))),
+            Icon(Icons.arrow_forward_ios, color: cs.onSurface.withValues(alpha: 0.72), size: 16),
           ],
         ),
       ),
