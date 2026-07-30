@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,11 +10,26 @@ final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, AppThemeMode>
   return ThemeModeNotifier(ref.read(sharedPreferencesProvider));
 });
 
+final effectiveThemeModeProvider = Provider<ThemeMode>((ref) {
+  final themeMode = ref.watch(themeModeProvider);
+  switch (themeMode) {
+    case AppThemeMode.light:
+      return ThemeMode.light;
+    case AppThemeMode.dark:
+      return ThemeMode.dark;
+    case AppThemeMode.auto:
+      final luxAsync = ref.watch(luxStreamProvider);
+      return luxAsync.when(
+        data: (lux) => lux <= 10 ? ThemeMode.dark : ThemeMode.light,
+        loading: () => ThemeMode.system,
+        error: (_, __) => ThemeMode.system,
+      );
+  }
+});
+
 class ThemeModeNotifier extends StateNotifier<AppThemeMode> {
   final SharedPreferences _prefs;
   static const String _keyThemeMode = 'theme_mode';
-  StreamSubscription<int>? _luxSubscription;
-  DateTime? _lastSwitchTime;
 
   ThemeModeNotifier(this._prefs) : super(AppThemeMode.dark) {
     _loadThemeMode();
@@ -42,42 +56,5 @@ class ThemeModeNotifier extends StateNotifier<AppThemeMode> {
             ? 'dark'
             : 'auto';
     await _prefs.setString(_keyThemeMode, value);
-  }
-
-  ThemeMode toMaterialThemeMode() {
-    switch (state) {
-      case AppThemeMode.light:
-        return ThemeMode.light;
-      case AppThemeMode.auto:
-        return ThemeMode.system;
-      case AppThemeMode.dark:
-        return ThemeMode.dark;
-    }
-  }
-
-  void listenToLightSensor(dynamic ref) {
-    _luxSubscription?.cancel();
-    final service = LightSensorService();
-    _luxSubscription = service.getLuxStream().listen((lux) {
-      if (state != AppThemeMode.auto) return;
-
-      final now = DateTime.now();
-      if (_lastSwitchTime != null && now.difference(_lastSwitchTime!).inSeconds < 2) {
-        return;
-      }
-
-      final isDark = service.isDarkFromLux(lux);
-      final target = isDark ? AppThemeMode.dark : AppThemeMode.light;
-      if (target != state) {
-        _lastSwitchTime = now;
-        state = target;
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _luxSubscription?.cancel();
-    super.dispose();
   }
 }
