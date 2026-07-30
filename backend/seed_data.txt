@@ -1,0 +1,6 @@
+node seed-data.js -i — Import demo ecommerce users
+node seed-data.js -d — Delete demo ecommerce users
+
+Demo login:
+demo@aqualife.com / password123
+admin@aqualife.com / password123

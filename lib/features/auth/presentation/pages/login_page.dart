@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:aqua_life/app/theme/app_colors.dart';
 import 'package:aqua_life/app/constants/api_constants.dart';
 import 'package:aqua_life/features/auth/presentation/pages/register_page.dart';
@@ -104,6 +105,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       // Save session cookie
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('session_cookie', sessionCookie);
+
+      // Also persist token for ApiClient auth interceptor
+      final secureStorage = const FlutterSecureStorage();
+      final tokenValue = sessionCookie.contains('=')
+          ? sessionCookie.split('=').sublist(1).join('=').split(';').first.trim()
+          : sessionCookie;
+      await secureStorage.write(key: 'auth_token', value: tokenValue);
 
       // Validate session & check role
       if (userData == null) {

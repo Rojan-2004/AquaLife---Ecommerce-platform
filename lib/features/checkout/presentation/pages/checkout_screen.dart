@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aqua_life/app/theme/app_theme.dart';
 import 'package:aqua_life/app/services/api_service.dart';
+import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';
 import 'package:aqua_life/features/order/presentation/pages/order_success_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -25,8 +26,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _postalCodeCtrl = TextEditingController();
   final _landmarkCtrl = TextEditingController();
 
-  List<dynamic> _cartItems = [];
-  double _subtotal = 0;
   bool _isLoading = true;
   bool _placing = false;
 
@@ -52,35 +51,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _fetchCartData() async {
     try {
-      // 1. Populate user info from preferences
+      // Populate user info from preferences
       final prefs = await SharedPreferences.getInstance();
       final userDataStr = prefs.getString('user_data');
       if (userDataStr != null) {
         final userData = jsonDecode(userDataStr);
         _nameCtrl.text = userData['name'] ?? userData['fullName'] ?? '';
         _emailCtrl.text = userData['email'] ?? '';
-      }
-
-      // 2. Fetch cart total
-      final res = await ApiService.get('/api/cart');
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final list = data['items'] ?? data['data'] ?? data;
-        if (list is List) {
-          double sum = 0;
-          for (var item in list) {
-            final prod = item['product'] ?? {};
-            final price = prod['price'] as num? ?? 0;
-            final quantity = item['quantity'] as int? ?? 1;
-            sum += price * quantity;
-          }
-          setState(() {
-            _cartItems = list;
-            _subtotal = sum;
-            _isLoading = false;
-          });
-          return;
-        }
       }
     } catch (_) {}
     setState(() => _isLoading = false);
@@ -142,11 +119,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  double get total => _subtotal + 50;
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    final cartState = ref.watch(cartViewModelProvider);
+    final subtotal = cartState.items.fold<double>(0, (sum, item) => sum + (item.price * item.quantity));
+    final total = subtotal > 0 ? subtotal + 50 : 0.0;
+
+    if (_isLoading || cartState.isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFF0A1628),
         body: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
@@ -210,7 +189,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Subtotal', style: TextStyle(color: Color(0xFF7AB8CC))),
-                        Text('Rs. ${_subtotal.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('Rs. ${subtotal.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 8),

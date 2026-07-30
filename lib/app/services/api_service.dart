@@ -40,6 +40,14 @@ class ApiService {
     );
   }
 
+  static Future<http.Response> put(String path, dynamic body) async {
+    return http.put(
+      Uri.parse('${ApiConstants.baseUrl}${_resolvePath(path)}'),
+      headers: await headers(),
+      body:    jsonEncode(body),
+    );
+  }
+
   static Future<http.Response> patch(String path, dynamic body) async {
     return http.patch(
       Uri.parse('${ApiConstants.baseUrl}${_resolvePath(path)}'),
@@ -48,10 +56,13 @@ class ApiService {
     );
   }
 
-  static Future<http.Response> delete(String path) async {
-    return http.delete(
-      Uri.parse('${ApiConstants.baseUrl}${_resolvePath(path)}'),
-      headers: await headers(),
-    );
+  static Future<http.Response> delete(String path, {dynamic body}) async {
+    final request = http.Request('DELETE', Uri.parse('${ApiConstants.baseUrl}${_resolvePath(path)}'));
+    request.headers.addAll(await headers());
+    if (body != null) {
+      request.body = jsonEncode(body);
+    }
+    final streamedResponse = await request.send();
+    return http.Response.fromStream(streamedResponse);
   }
 }

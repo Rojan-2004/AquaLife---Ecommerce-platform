@@ -20,8 +20,14 @@ class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
   final _emailController = TextEditingController();
   final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   bool _isSaving = false;
+  bool _isChangingPassword = false;
+  final bool _obscureNew = true;
+  final bool _obscureConfirm = true;
 
   @override
   void initState() {
@@ -46,6 +52,9 @@ class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
     _emailController.dispose();
     _usernameController.dispose();
     _phoneController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -56,15 +65,20 @@ class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
     setState(() => _isSaving = true);
     try {
       final apiClient = ref.read(apiClientProvider);
+      final fullName = _fullNameController.text.trim();
+      final parts = fullName.split(' ');
+      final firstName = parts.isNotEmpty ? parts.first : '';
+      final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
       final body = <String, dynamic>{
-        'fullName': _fullNameController.text.trim(),
+        'firstName': firstName,
+        'lastName': lastName,
         'username': _usernameController.text.trim(),
         'phoneNumber': _phoneController.text.trim().isEmpty
             ? null
             : _phoneController.text.trim(),
       };
 
-      final response = await apiClient.patch(
+      final response = await apiClient.put(
         ApiEndpoints.authUpdateProfile,
         data: body,
       );
@@ -106,6 +120,64 @@ class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _changePassword() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (!mounted) return;
+
+    final current = _currentPasswordController.text.trim();
+    final newPass = _newPasswordController.text.trim();
+    final confirm = _confirmPasswordController.text.trim();
+
+    if (newPass != confirm) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New passwords do not match')),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isChangingPassword = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.put(
+        ApiEndpoints.authChangePassword,
+        data: {
+          'currentPassword': current,
+          'newPassword': newPass,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Password updated successfully')),
+          );
+        }
+      } else {
+        final message = response.data is Map
+            ? (response.data['message'] as String?)
+            : null;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message ?? 'Password update failed')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password update failed')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isChangingPassword = false);
     }
   }
 
@@ -172,20 +244,101 @@ class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
                   },
                 ),
                 SizedBox(height: compact ? 10 : 12),
-                _buildTextField(
-                  controller: _phoneController,
-                  label: 'Phone Number',
-                  icon: Icons.phone_outlined,
-                  compact: compact,
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    final v = value?.trim() ?? '';
-                    if (v.isEmpty) return null;
-                    if (v.length < 10) return 'Invalid phone number';
-                    return null;
-                  },
-                ),
-                SizedBox(height: compact ? 16 : 20),
+                 _buildTextField(
+                   controller: _phoneController,
+                   label: 'Phone Number',
+                   icon: Icons.phone_outlined,
+                   compact: compact,
+                   keyboardType: TextInputType.phone,
+                   validator: (value) {
+                     final v = value?.trim() ?? '';
+                     if (v.isEmpty) return null;
+                     if (v.length < 10) return 'Invalid phone number';
+                     return null;
+                   },
+                 ),
+                 SizedBox(height: compact ? 16 : 20),
+                 const Align(
+                   alignment: Alignment.centerLeft,
+                   child: Text(
+                     'Change Password',
+                     style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                   ),
+                 ),
+                 SizedBox(height: compact ? 10 : 12),
+                 _buildTextField(
+                   controller: _currentPasswordController,
+                   label: 'Current Password',
+                   icon: Icons.lock_outline,
+                   compact: compact,
+                   obscureText: true,
+                   validator: (value) {
+                     final v = value?.trim() ?? '';
+                     if (v.isEmpty) return 'Required';
+                     return null;
+                   },
+                 ),
+                 SizedBox(height: compact ? 10 : 12),
+                 _buildTextField(
+                   controller: _newPasswordController,
+                   label: 'New Password',
+                   icon: Icons.lock_outline,
+                   compact: compact,
+                   obscureText: _obscureNew,
+                   validator: (value) {
+                     final v = value?.trim() ?? '';
+                     if (v.isEmpty) return 'Required';
+                     if (v.length < 6) return 'Min 6 characters';
+                     return null;
+                   },
+                 ),
+                 SizedBox(height: compact ? 10 : 12),
+                 _buildTextField(
+                   controller: _confirmPasswordController,
+                   label: 'Confirm New Password',
+                   icon: Icons.lock_outline,
+                   compact: compact,
+                   obscureText: _obscureConfirm,
+                   validator: (value) {
+                     final v = value?.trim() ?? '';
+                     if (v.isEmpty) return 'Required';
+                     if (v != _newPasswordController.text.trim()) return 'Passwords do not match';
+                     return null;
+                   },
+                 ),
+                 SizedBox(height: compact ? 16 : 20),
+                 SizedBox(
+                   width: double.infinity,
+                   height: compact ? 50 : 54,
+                   child: ElevatedButton(
+                     onPressed: _isChangingPassword ? null : _changePassword,
+                     style: ElevatedButton.styleFrom(
+                       backgroundColor: const Color(0xFF1A3A5C),
+                       foregroundColor: const Color(0xFF00B4D8),
+                       shape: RoundedRectangleBorder(
+                         borderRadius: BorderRadius.circular(12),
+                       ),
+                       elevation: 0,
+                     ),
+                     child: _isChangingPassword
+                         ? const SizedBox(
+                             height: 20,
+                             width: 20,
+                             child: CircularProgressIndicator(
+                               strokeWidth: 2,
+                               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00B4D8)),
+                             ),
+                           )
+                         : const Text(
+                             'Change Password',
+                             style: TextStyle(
+                               fontSize: 16,
+                               fontWeight: FontWeight.bold,
+                             ),
+                           ),
+                   ),
+                 ),
+                 SizedBox(height: compact ? 12 : 16),
                 SizedBox(
                   width: double.infinity,
                   height: compact ? 50 : 54,
@@ -231,6 +384,7 @@ class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
     required IconData icon,
     bool compact = false,
     bool enabled = true,
+    bool obscureText = false,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
@@ -243,6 +397,7 @@ class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
       child: TextFormField(
         controller: controller,
         enabled: enabled,
+        obscureText: obscureText,
         keyboardType: keyboardType,
         style: TextStyle(color: Colors.white, fontSize: compact ? 14 : 15),
         decoration: InputDecoration(
