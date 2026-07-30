@@ -34,8 +34,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -59,11 +60,11 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           height: 220,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFF0D1F35),
-                            border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.5), width: 2),
+                            color: cs.surface,
+                            border: Border.all(color: cs.primary.withValues(alpha: 0.5), width: 2),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primaryBlue.withValues(alpha: 0.4),
+                                color: cs.primary.withValues(alpha: 0.4),
                                 blurRadius: 50,
                                 spreadRadius: 8,
                               ),
@@ -75,7 +76,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                               Icon(
                                 _onboardingData[index]["icon"] as IconData,
                                 size: 100,
-                                color: AppColors.primaryBlue,
+                                color: cs.primary,
                               ),
                               Positioned(
                                 top: 40,
@@ -83,7 +84,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                 child: Icon(
                                   Icons.bubble_chart,
                                   size: 30,
-                                  color: const Color(0xFF1E3A5C),
+                                  color: cs.outline,
                                 ),
                               ),
                               Positioned(
@@ -92,7 +93,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                 child: Icon(
                                   Icons.bubble_chart,
                                   size: 20,
-                                  color: const Color(0xFF1E3A5C),
+                                  color: cs.outline,
                                 ),
                               ),
                             ],
@@ -102,10 +103,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                         Text(
                           _onboardingData[index]["title"]!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: cs.onSurface,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -113,9 +114,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                         Text(
                           _onboardingData[index]["description"]!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
-                            color: Color(0xFF7AB8CC),
+                            color: cs.onSurface.withValues(alpha: 0.72),
                             height: 1.6,
                           ),
                         ),
@@ -138,25 +139,25 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
-                    onPressed: () {
-                      ref.read(onboardingViewModelProvider.notifier).completeOnboarding(context);
-                    },
-                    child: const Text(
-                      "Skip",
-                      style: TextStyle(color: Color(0xFF7AB8CC), fontSize: 16),
-                    ),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A3A5C),
-                      foregroundColor: AppColors.primaryBlue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: Color(0xFF1E3A5C)),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 15),
-                    ),
+                   TextButton(
+                     onPressed: () {
+                       ref.read(onboardingViewModelProvider.notifier).completeOnboarding(context);
+                     },
+                     child: Text(
+                       "Skip",
+                       style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72), fontSize: 16),
+                     ),
+                   ),
+                   ElevatedButton(
+                     style: ElevatedButton.styleFrom(
+                       backgroundColor: cs.tertiary,
+                       foregroundColor: cs.primary,
+                       shape: RoundedRectangleBorder(
+                         borderRadius: BorderRadius.circular(12),
+                         side: BorderSide(color: cs.outline),
+                       ),
+                       padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 15),
+                     ),
                     onPressed: () {
                       if (_currentPage == _onboardingData.length - 1) {
                         ref.read(onboardingViewModelProvider.notifier).completeOnboarding(context);
@@ -183,6 +184,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   Widget buildDot(int index, BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       height: 10,
@@ -190,11 +192,11 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       margin: const EdgeInsets.only(right: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: _currentPage == index ? AppColors.primaryBlue : const Color(0xFF1E3A5C),
+        color: _currentPage == index ? cs.primary : cs.outline,
         boxShadow: [
           if (_currentPage == index)
             BoxShadow(
-              color: AppColors.primaryBlue.withValues(alpha: 0.5),
+              color: cs.primary.withValues(alpha: 0.5),
               blurRadius: 10,
             ),
         ],

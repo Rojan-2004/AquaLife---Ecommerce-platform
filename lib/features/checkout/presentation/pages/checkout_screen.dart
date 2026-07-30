@@ -2,9 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:aqua_life/app/theme/app_theme.dart';
-import 'package:aqua_life/app/services/api_service.dart';
 import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';
+import 'package:aqua_life/features/order/presentation/view_model/order_view_model.dart';
 import 'package:aqua_life/features/order/presentation/pages/order_success_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -27,7 +26,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _landmarkCtrl = TextEditingController();
 
   bool _isLoading = true;
-  bool _placing = false;
 
   @override
   void initState() {
@@ -51,7 +49,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _fetchCartData() async {
     try {
-      // Populate user info from preferences
       final prefs = await SharedPreferences.getInstance();
       final userDataStr = prefs.getString('user_data');
       if (userDataStr != null) {
@@ -63,55 +60,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() => _isLoading = false);
   }
 
-  Future<void> _placeOrder() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _placing = true);
-
+  Future<void> _useCurrentLocation() async {
     try {
-      final res = await ApiService.post('/api/orders', {
-        'shippingAddress': {
-          'fullName': _nameCtrl.text.trim(),
-          'email': _emailCtrl.text.trim(),
-          'phone': _phoneCtrl.text.trim(),
-          'province': _provinceCtrl.text.trim(),
-          'district': _districtCtrl.text.trim(),
-          'city': _cityCtrl.text.trim(),
-          'street': _streetCtrl.text.trim(),
-          'postalCode': _postalCodeCtrl.text.trim(),
-          'landmark': _landmarkCtrl.text.trim(),
-        }
-      });
-
-      setState(() => _placing = false);
-
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final data = jsonDecode(res.body);
-        final orderId = data['orderId'] ?? data['data']?['id'] ?? data['id'] ?? 'OrderPlaced';
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Order Placed Successfully!'),
-            backgroundColor: const Color(0xFF112240),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ));
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => OrderSuccessScreen(orderId: orderId.toString())),
-          );
-        }
-      } else {
-        final data = jsonDecode(res.body);
-        throw Exception(data['message'] ?? 'Failed to place order');
-      }
+      await ref.read(orderViewModelProvider.notifier).fetchCurrentAddress();
     } catch (e) {
-      setState(() => _placing = false);
       if (mounted) {
-        final errMsg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(errMsg),
-          backgroundColor: const Color(0xFF7f1d1d),
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ));
@@ -119,25 +75,91 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
+  void _applyAddress(Map<String, String?> address) {
+    setState(() {
+      _streetCtrl.text = address['street'] ?? '';
+      _cityCtrl.text = address['locality'] ?? '';
+      _postalCodeCtrl.text = address['postalCode'] ?? '';
+      _districtCtrl.text = address['locality'] ?? '';
+      _provinceCtrl.text = address['country'] ?? '';
+    });
+  }
+
+  Future<void> _placeOrder() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final shippingAddress = <String, dynamic>{
+      'fullName': _nameCtrl.text.trim(),
+      'email': _emailCtrl.text.trim(),
+      'phone': _phoneCtrl.text.trim(),
+      'province': _provinceCtrl.text.trim(),
+      'district': _districtCtrl.text.trim(),
+      'city': _cityCtrl.text.trim(),
+      'street': _streetCtrl.text.trim(),
+      'postalCode': _postalCodeCtrl.text.trim(),
+      'landmark': _landmarkCtrl.text.trim(),
+    };
+
+    final orderId = await ref
+        .read(orderViewModelProvider.notifier)
+        .placeOrder(shippingAddress);
+
+    if (orderId != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Order Placed Successfully!'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => OrderSuccessScreen(orderId: orderId)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartState = ref.watch(cartViewModelProvider);
+    final orderState = ref.watch(orderViewModelProvider);
     final subtotal = cartState.items.fold<double>(0, (sum, item) => sum + (item.price * item.quantity));
     final total = subtotal > 0 ? subtotal + 50 : 0.0;
+    final cs = Theme.of(context).colorScheme;
+
+    if (orderState.address != null && orderState.address!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applyAddress(orderState.address!);
+      });
+    }
+    if (orderState.error != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(orderState.error!),
+            backgroundColor: cs.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ));
+        }
+      });
+    }
+
+    final isProcessing = orderState.isAuthenticating;
 
     if (_isLoading || cartState.isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A1628),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
+      return Scaffold(
+        backgroundColor: cs.surface,
+        body: Center(child: CircularProgressIndicator(color: cs.primary)),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Checkout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Checkout', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -146,7 +168,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Shipping Address', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('Shipping Address', style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton.icon(
+                    onPressed: orderState.isFetchingAddress ? null : _useCurrentLocation,
+                    icon: orderState.isFetchingAddress
+                        ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2))
+                        : Icon(Icons.my_location, color: cs.primary, size: 20),
+                    label: Text(orderState.isFetchingAddress ? 'Locating...' : 'Use my current location'),
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
               _buildField(_nameCtrl, 'Full Name', Icons.person_outline),
               const SizedBox(height: 12),
@@ -174,38 +209,38 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               const SizedBox(height: 12),
               _buildField(_landmarkCtrl, 'Landmark (Optional)', Icons.place_outlined, required: false),
               const SizedBox(height: 24),
-              const Text('Order Summary', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Order Summary', style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF112240),
+                  color: cs.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF1E3A5C)),
+                  border: Border.all(color: cs.outline),
                 ),
                 child: Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Subtotal', style: TextStyle(color: Color(0xFF7AB8CC))),
-                        Text('Rs. ${subtotal.toStringAsFixed(0)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('Subtotal', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72))),
+                        Text('Rs. ${subtotal.toStringAsFixed(0)}', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Delivery Fee', style: TextStyle(color: Color(0xFF7AB8CC))),
-                        Text('Rs. 50', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const Divider(color: Color(0xFF1E3A5C), height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                        Text('Rs. ${total.toStringAsFixed(0)}', style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('Delivery Fee', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72))),
+                        Text('Rs. 50', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    Divider(color: cs.outline, height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Total', style: TextStyle(color: cs.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text('Rs. ${total.toStringAsFixed(0)}', style: TextStyle(color: cs.primary, fontSize: 18, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
@@ -216,14 +251,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _placing ? null : _placeOrder,
+                  onPressed: isProcessing ? null : _placeOrder,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00B4D8),
-                    foregroundColor: Colors.white,
+                    backgroundColor: cs.primary,
+                    foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: _placing
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  child: isProcessing
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2)),
+                            const SizedBox(width: 12),
+                            Text('Confirm with fingerprint...', style: TextStyle(fontSize: 14)),
+                          ],
+                        )
                       : const Text('Place Order', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -235,20 +277,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildField(TextEditingController ctrl, String hint, IconData icon, {TextInputType? keyboardType, bool required = true}) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF112240),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
+        border: Border.all(color: cs.outline),
       ),
       child: TextFormField(
         controller: ctrl,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: cs.onSurface),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF4A6B82)),
-          prefixIcon: Icon(icon, color: const Color(0xFF7AB8CC)),
+          hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.48)),
+          prefixIcon: Icon(icon, color: cs.onSurface.withValues(alpha: 0.72)),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),

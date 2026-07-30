@@ -194,7 +194,6 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // Handle 401 Unauthorized - token expired, attempt refresh
     if (err.response?.statusCode == 401) {
       final refreshToken = await _storage.read(key: _refreshTokenKey);
       if (refreshToken != null) {
@@ -211,7 +210,6 @@ class _AuthInterceptor extends Interceptor {
               if (newRefreshToken != null) {
                 await _storage.write(key: _refreshTokenKey, value: newRefreshToken);
               }
-              // Retry original request with new token
               final RequestOptions request = err.requestOptions;
               request.headers['Authorization'] = 'Bearer $newToken';
               final retryResponse = await dio.fetch(request);
@@ -222,10 +220,33 @@ class _AuthInterceptor extends Interceptor {
           // Refresh failed, clear tokens
         }
       }
-      // Clear tokens on auth failure
       await _storage.delete(key: _tokenKey);
       await _storage.delete(key: _refreshTokenKey);
+      return handler.next(err);
     }
+
+    if (err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.sendTimeout) {
+      return handler.reject(
+        DioException(
+          requestOptions: err.requestOptions,
+          type: err.type,
+          error: 'Request to ${err.requestOptions.uri} timed out. Verify the backend is running and reachable.',
+        ),
+      );
+    }
+
+    if (err.type == DioExceptionType.connectionError) {
+      return handler.reject(
+        DioException(
+          requestOptions: err.requestOptions,
+          type: err.type,
+          error: 'Cannot reach ${err.requestOptions.uri}. Check that the backend is running and accessible from the emulator.',
+        ),
+      );
+    }
+
     handler.next(err);
   }
 }

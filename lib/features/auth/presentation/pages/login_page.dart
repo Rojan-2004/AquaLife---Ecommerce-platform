@@ -36,133 +36,59 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      String? sessionCookie;
-      Map<String, dynamic>? userData;
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
 
-      try {
-        // Try NextAuth flow first
-        final csrfRes = await http.get(Uri.parse('${ApiConstants.baseUrl}/api/auth/csrf'));
-        if (csrfRes.statusCode == 200) {
-          final csrfData = jsonDecode(csrfRes.body);
-          final csrfToken = csrfData['csrfToken'];
-          if (csrfToken != null) {
-            final loginRes = await http.post(
-              Uri.parse('${ApiConstants.baseUrl}/api/auth/callback/credentials'),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({
-                'csrfToken': csrfToken,
-                'email': _emailController.text,
-                'password': _passwordController.text,
-                'json': 'true',
-              }),
-            );
+      final loginRes = await http
+          .post(
+            Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 15));
 
-            final setCookie = loginRes.headers['set-cookie'];
-            if (setCookie != null) {
-              final cookies = setCookie.split(RegExp(r',(?=[^;]+(?:;|$))'));
-              for (var cookie in cookies) {
-                if (cookie.contains('next-auth.session-token') || cookie.contains('sessionToken')) {
-                  sessionCookie = cookie.split(';').first;
-                  break;
-                }
-              }
-              sessionCookie ??= setCookie.split(';').first;
-            }
-          }
-        }
-      } catch (_) {
-        // NextAuth endpoints not active/supported
+      if (loginRes.statusCode != 200) {
+        final data = jsonDecode(loginRes.body);
+        throw Exception(data['message'] ?? 'Invalid email or password');
       }
 
-      // Fallback to Express backend login if NextAuth yielded no cookie
-      if (sessionCookie == null) {
-        final loginRes = await http.post(
-          Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/login'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': _emailController.text,
-            'password': _passwordController.text,
-          }),
-        );
+      final data = jsonDecode(loginRes.body) as Map<String, dynamic>;
+      final token = data['token'] as String?;
+      final refreshToken = data['refreshToken'] as String?;
+      final userData = data['data'] as Map<String, dynamic>?;
 
-        if (loginRes.statusCode == 200) {
-          final data = jsonDecode(loginRes.body);
-          final token = data['token'] ?? data['data']?['token'];
-          userData = data['data'] ?? data['user'];
-          if (token != null) {
-            sessionCookie = 'token=$token';
-          }
-        } else {
-          final data = jsonDecode(loginRes.body);
-          throw Exception(data['message'] ?? 'Invalid email or password');
-        }
+      if (token == null) {
+        throw Exception('Login failed: missing token');
       }
 
-      if (sessionCookie == null) {
-        throw Exception('Invalid email or password');
-      }
-
-      // Save session cookie
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('session_cookie', sessionCookie);
+      await prefs.setString('session_cookie', 'token=$token');
+      await prefs.setString('user_data', jsonEncode(userData));
 
-      // Also persist token for ApiClient auth interceptor
       final secureStorage = const FlutterSecureStorage();
-      final tokenValue = sessionCookie.contains('=')
-          ? sessionCookie.split('=').sublist(1).join('=').split(';').first.trim()
-          : sessionCookie;
-      await secureStorage.write(key: 'auth_token', value: tokenValue);
+      await secureStorage.write(key: 'auth_token', value: token);
+      if (refreshToken != null) {
+        await secureStorage.write(key: 'refresh_token', value: refreshToken);
+      }
 
-      // Validate session & check role
-      if (userData == null) {
-        final sessionRes = await http.get(
-          Uri.parse('${ApiConstants.baseUrl}/api/auth/session'),
-          headers: {'Cookie': sessionCookie},
+      if (userData != null && userData['role'] == 'admin') {
+        await prefs.remove('session_cookie');
+        await secureStorage.delete(key: 'auth_token');
+        throw Exception('Admin access is web-only');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Login successful!'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardPage()),
         );
-
-        if (sessionRes.statusCode == 200) {
-          final sessionData = jsonDecode(sessionRes.body);
-          userData = sessionData['user'];
-        } else {
-          // Fallback to /api/v1/auth/me
-          final meRes = await http.get(
-            Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/me'),
-            headers: {
-              'Cookie': sessionCookie,
-              'Authorization': 'Bearer ${sessionCookie.replaceAll('token=', '')}'
-            },
-          );
-          if (meRes.statusCode == 200) {
-            final meData = jsonDecode(meRes.body);
-            userData = meData['data'] ?? meData;
-          }
-        }
       }
-
-      if (userData != null) {
-        final role = userData['role'];
-        if (role == 'admin') {
-          await prefs.remove('session_cookie');
-          throw Exception('Admin access is web-only');
-        }
-
-        await prefs.setString('user_data', jsonEncode(userData));
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Login successful!'),
-            backgroundColor: const Color(0xFF112240),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ));
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const DashboardPage()),
-          );
-        }
-        return;
-      }
-      throw Exception('Failed to retrieve user session');
     } catch (e) {
       if (mounted) {
         final errMsg = e.toString().replaceAll('Exception: ', '');
@@ -182,18 +108,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF0A1628),
-              Color(0xFF0D2137),
+              cs.surface,
+              cs.surface.withValues(alpha: 0.8),
             ],
-            stops: [0.0, 0.4],
+            stops: const [0.0, 0.4],
           ),
         ),
         child: SafeArea(
@@ -220,6 +147,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _buildLogo() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         Container(
@@ -227,11 +155,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           height: 75,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF112240),
-            border: Border.all(color: const Color(0xFF1E3A5C), width: 1.5),
+            color: cs.surface,
+            border: Border.all(color: cs.outline, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryBlue.withOpacity(0.25),
+                color: cs.primary.withValues(alpha: 0.25),
                 blurRadius: 20,
                 spreadRadius: 4,
               ),
@@ -241,17 +169,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             'assets/Aqua_life_logo.png',
             height: 75,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(Icons.water_drop, color: AppColors.primaryBlue, size: 40),
+            errorBuilder: (_, __, ___) => Icon(Icons.water_drop, color: cs.primary, size: 40),
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'AQUALIFE',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             letterSpacing: 3.0,
-            color: Colors.white,
+            color: cs.onSurface,
           ),
         ),
       ],
@@ -308,26 +236,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     bool isPasswordVisible = false,
     VoidCallback? onTogglePassword,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1F35),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
+        border: Border.all(color: cs.outline),
       ),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
         obscureText: isPassword && !isPasswordVisible,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: cs.onSurface),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF4A6B82)),
-          prefixIcon: Icon(icon, color: const Color(0xFF7AB8CC)),
+          hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.48)),
+          prefixIcon: Icon(icon, color: cs.onSurface.withValues(alpha: 0.72)),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
                     isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                    color: const Color(0xFF7AB8CC),
+                    color: cs.onSurface.withValues(alpha: 0.72),
                   ),
                   onPressed: onTogglePassword,
                 )
@@ -361,15 +290,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       width: double.infinity,
       height: 55,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF00B4D8), Color(0xFF0077B6)],
+        gradient: LinearGradient(
+          colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00B4D8).withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -405,25 +334,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget _buildDivider() {
     return Row(
       children: [
-        const Expanded(child: Divider(color: Color(0xFF1E3A5C))),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+        Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'OR',
-            style: TextStyle(color: Color(0xFF4A6B82)),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.48)),
           ),
         ),
-        const Expanded(child: Divider(color: Color(0xFF1E3A5C))),
+        Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
       ],
     );
   }
 
   Widget _buildSocialLogin() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
-        const Text(
+        Text(
           'Continue with',
-          style: TextStyle(color: Color(0xFF7AB8CC), fontSize: 14),
+          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72), fontSize: 14),
         ),
         const SizedBox(height: 16),
         Row(
@@ -440,22 +370,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               "Don't have an account? ",
-              style: TextStyle(color: Color(0xFF7AB8CC), fontSize: 14),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72), fontSize: 14),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RegisterPage()),
-                );
-              },
-              child: const Text(
-                'Sign Up',
-                style: TextStyle(color: AppColors.primaryBlue, fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-            ),
+             TextButton(
+               onPressed: () {
+                 Navigator.push(
+                   context,
+                   MaterialPageRoute(builder: (context) => const RegisterPage()),
+                 );
+               },
+               child: Text(
+                 'Sign Up',
+                 style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 14, fontWeight: FontWeight.bold),
+               ),
+             ),
           ],
         ),
       ],
@@ -463,13 +393,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _buildSocialButton(IconData icon, String label, Color color) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: 80,
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF112240),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
+        border: Border.all(color: cs.outline),
       ),
       child: Column(
         children: [
@@ -477,7 +408,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(color: Color(0xFF7AB8CC), fontSize: 12),
+            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72), fontSize: 12),
           ),
         ],
       ),

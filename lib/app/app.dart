@@ -9,12 +9,13 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
+    final effectiveThemeMode = ref.watch(effectiveThemeModeProvider);
+
     return MaterialApp(
       title: 'AquaLife',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
+      themeMode: effectiveThemeMode,
       debugShowCheckedModeBanner: false,
       home: const SplashPage(),
     );

@@ -59,7 +59,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: const Text('Wishlist updated'),
-            backgroundColor: const Color(0xFF112240),
+            backgroundColor: Theme.of(context).colorScheme.surface,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ));
@@ -70,42 +70,43 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final compact = MediaQuery.sizeOf(context).width < 360;
 
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A1628),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
+      return Scaffold(
+        backgroundColor: cs.surface,
+        body: Center(child: CircularProgressIndicator(color: cs.primary)),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('My Wishlist', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('My Wishlist', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
       ),
       body: _error != null
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.wifi_off, color: Colors.white24, size: 48),
+                  Icon(Icons.wifi_off, color: cs.onSurface.withValues(alpha: 0.24), size: 48),
                   const SizedBox(height: 12),
-                  const Text('Failed to load wishlist', style: TextStyle(color: Colors.white54)),
+                  Text('Failed to load wishlist', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54))),
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: _fetchWishlist,
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3A5C)),
+                    style: ElevatedButton.styleFrom(backgroundColor: cs.tertiary),
                     child: const Text('Retry'),
                   ),
                 ],
               ),
             )
           : _items.isEmpty
-              ? const Center(
-                  child: Text('No items in your wishlist yet', style: TextStyle(color: Color(0xFF7AB8CC))),
+              ? Center(
+                  child: Text('No items in your wishlist yet', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72))),
                 )
               : GridView.builder(
                   padding: const EdgeInsets.all(16),
@@ -139,9 +140,9 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF112240),
+                          color: cs.surface,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF1E3A5C)),
+                          border: Border.all(color: cs.outline),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,13 +162,13 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                                                 ? child
                                                 : const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00B4D8))),
                                             errorBuilder: (_, __, ___) => Container(
-                                              color: const Color(0xFF112240),
-                                              child: const Icon(Icons.image_not_supported, color: Colors.white24, size: 36),
+                                              color: cs.surface,
+                                              child: Icon(Icons.image_not_supported, color: cs.onSurface.withValues(alpha: 0.24), size: 36),
                                             ),
                                           )
                                         : Container(
-                                            color: const Color(0xFF112240),
-                                            child: const Center(child: Icon(Icons.set_meal, color: Colors.white24, size: 36)),
+                                            color: cs.surface,
+                                            child: Center(child: Icon(Icons.set_meal, color: cs.onSurface.withValues(alpha: 0.24), size: 36)),
                                           ),
                                   ),
                                   Positioned(
@@ -178,11 +179,11 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                                       child: InkWell(
                                         borderRadius: BorderRadius.circular(20),
                                         onTap: () => _toggleWishlist(productId),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(6),
-                                          decoration: const BoxDecoration(color: Color(0xFF1A3A5C), shape: BoxShape.circle),
-                                          child: const Icon(Icons.favorite, color: Colors.red, size: 16),
-                                        ),
+                                     child: Container(
+                                           padding: const EdgeInsets.all(6),
+                                           decoration: BoxDecoration(color: cs.tertiary, shape: BoxShape.circle),
+                                           child: const Icon(Icons.favorite, color: Colors.red, size: 16),
+                                         ),
                                       ),
                                     ),
                                   ),
@@ -194,19 +195,19 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Rs. ${price.toStringAsFixed(0)}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
+                                   Text(
+                                     name,
+                                     maxLines: 1,
+                                     overflow: TextOverflow.ellipsis,
+                                     style: TextStyle(color: cs.onSurface, fontSize: 13, fontWeight: FontWeight.w600),
+                                   ),
+                                   const SizedBox(height: 4),
+                                   Text(
+                                     'Rs. ${price.toStringAsFixed(0)}',
+                                     maxLines: 1,
+                                     overflow: TextOverflow.ellipsis,
+                                     style: TextStyle(color: cs.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                                   ),
                                 ],
                               ),
                             ),
