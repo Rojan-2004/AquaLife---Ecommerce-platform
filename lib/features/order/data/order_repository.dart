@@ -1,5 +1,6 @@
 import 'package:aqua_life/core/api/api_client.dart';
 import 'package:aqua_life/core/api/api_endpoints.dart';
+import 'package:aqua_life/core/services/location/location_service.dart';
 import 'package:aqua_life/features/order/domain/entities/order_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,6 +30,11 @@ class OrderRepository {
       }
     }
     return null;
+  }
+
+  Future<Map<String, String?>> getCurrentAddress() async {
+    final locationService = LocationService();
+    return await locationService.getCurrentAddress();
   }
 }
 

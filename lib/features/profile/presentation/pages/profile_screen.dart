@@ -10,6 +10,7 @@ import 'package:aqua_life/features/auth/presentation/pages/login_page.dart';
 import 'package:aqua_life/features/wishlist/presentation/pages/wishlist_screen.dart';
 import 'package:aqua_life/features/order/presentation/pages/order_history_screen.dart';
 import 'package:aqua_life/features/profile/presentation/pages/profile_update_screen.dart';
+import 'package:aqua_life/features/settings/presentation/pages/settings_screen.dart';
 import 'package:aqua_life/core/theme/theme_mode.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -240,41 +241,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                _loadProfileData();
              }),
              const SizedBox(height: 10),
-             Container(
-               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-               decoration: BoxDecoration(
-                 color: cs.surface,
-                 borderRadius: BorderRadius.circular(12),
-                 border: Border.all(color: cs.outline),
-               ),
-               child: Row(
-                 children: [
-                   Icon(Icons.dark_mode_outlined, color: cs.primary),
-                   const SizedBox(width: 16),
-                   Expanded(
-                     child: Text(
-                       'Dark Mode',
-                       style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold),
-                     ),
-                   ),
-                   Consumer(
-                     builder: (context, ref, _) {
-                       final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
-                       return Switch(
-                         value: isDark,
-                         onChanged: (value) {
-                           ref.read(themeModeProvider.notifier).setThemeMode(
-                             value ? ThemeMode.dark : ThemeMode.light,
-                           );
-                         },
-                         activeThumbColor: kAccent,
-                         activeTrackColor: const Color(0xFF1A3A5C),
-                       );
-                     },
-                   ),
-                 ],
-               ),
-             ),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cs.outline),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings_outlined, color: cs.primary),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'Appearance / Theme',
+                          style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios, color: cs.onSurface.withValues(alpha: 0.72), size: 16),
+                    ],
+                  ),
+                ),
+              ),
              const SizedBox(height: 10),
              _buildMenuItem(Icons.help_outline, 'Help & Support', cs, () {
                ScaffoldMessenger.of(context).showSnackBar(SnackBar(

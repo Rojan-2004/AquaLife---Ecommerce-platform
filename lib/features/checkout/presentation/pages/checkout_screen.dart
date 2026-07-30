@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:aqua_life/app/theme/app_theme.dart';
 import 'package:aqua_life/app/services/api_service.dart';
 import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';
+import 'package:aqua_life/features/order/presentation/view_model/order_view_model.dart';
 import 'package:aqua_life/features/order/presentation/pages/order_success_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -51,7 +51,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _fetchCartData() async {
     try {
-      // Populate user info from preferences
       final prefs = await SharedPreferences.getInstance();
       final userDataStr = prefs.getString('user_data');
       if (userDataStr != null) {
@@ -61,6 +60,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     } catch (_) {}
     setState(() => _isLoading = false);
+  }
+
+  Future<void> _useCurrentLocation() async {
+    try {
+      await ref.read(orderViewModelProvider.notifier).fetchCurrentAddress();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    }
+  }
+
+  void _applyAddress(Map<String, String?> address) {
+    setState(() {
+      _streetCtrl.text = address['street'] ?? '';
+      _cityCtrl.text = address['locality'] ?? '';
+      _postalCodeCtrl.text = address['postalCode'] ?? '';
+      _districtCtrl.text = address['locality'] ?? '';
+      _provinceCtrl.text = address['country'] ?? '';
+    });
   }
 
   Future<void> _placeOrder() async {
@@ -122,9 +146,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cartState = ref.watch(cartViewModelProvider);
+    final orderState = ref.watch(orderViewModelProvider);
     final subtotal = cartState.items.fold<double>(0, (sum, item) => sum + (item.price * item.quantity));
     final total = subtotal > 0 ? subtotal + 50 : 0.0;
     final cs = Theme.of(context).colorScheme;
+
+    if (orderState.address != null && orderState.address!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applyAddress(orderState.address!);
+      });
+    }
+    if (orderState.error != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(orderState.error!),
+            backgroundColor: cs.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ));
+        }
+      });
+    }
 
     if (_isLoading || cartState.isLoading) {
       return Scaffold(
@@ -147,7 +190,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Shipping Address', style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('Shipping Address', style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
+                  TextButton.icon(
+                    onPressed: orderState.isFetchingAddress ? null : _useCurrentLocation,
+                    icon: orderState.isFetchingAddress
+                        ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2))
+                        : Icon(Icons.my_location, color: cs.primary, size: 20),
+                    label: Text(orderState.isFetchingAddress ? 'Locating...' : 'Use my current location'),
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
               _buildField(_nameCtrl, 'Full Name', Icons.person_outline),
               const SizedBox(height: 12),

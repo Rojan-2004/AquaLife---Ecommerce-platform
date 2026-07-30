@@ -33,4 +33,14 @@ class OrderViewModel extends StateNotifier<OrderState> {
       return null;
     }
   }
+
+  Future<void> fetchCurrentAddress() async {
+    try {
+      state = state.copyWith(isFetchingAddress: true, error: null);
+      final address = await _repo.getCurrentAddress();
+      state = state.copyWith(isFetchingAddress: false, address: address);
+    } catch (e) {
+      state = state.copyWith(isFetchingAddress: false, error: e.toString());
+    }
+  }
 }
