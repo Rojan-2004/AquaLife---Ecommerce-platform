@@ -9,6 +9,7 @@ import 'package:aqua_life/app/services/api_service.dart';
 import 'package:aqua_life/features/auth/presentation/pages/login_page.dart';
 import 'package:aqua_life/features/wishlist/presentation/pages/wishlist_screen.dart';
 import 'package:aqua_life/features/order/presentation/pages/order_history_screen.dart';
+import 'package:aqua_life/features/profile/presentation/pages/profile_update_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -48,14 +49,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
 
       // 2. Fetch stats & recent orders from backend
-      final statsRes = await ApiService.get('/api/user/stats');
+      final statsRes = await ApiService.get('/api/v1/user/dashboard');
       if (statsRes.statusCode == 200) {
         final data = jsonDecode(statsRes.body);
         final stats = data['data'] ?? data;
         setState(() {
-          _ordersCount = stats['ordersCount'] ?? 0;
-          _wishlistCount = stats['wishlistCount'] ?? 0;
-          _reviewsCount = stats['reviewsCount'] ?? 0;
+          _ordersCount = stats['orders'] ?? 0;
+          _wishlistCount = stats['wishlist'] ?? 0;
+          _reviewsCount = stats['reviews'] ?? 0;
           _recentOrders = stats['recentOrders'] ?? [];
         });
       }
@@ -230,6 +231,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 10),
             _buildMenuItem(Icons.favorite_outline, 'Wishlist', () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
+            }),
+            const SizedBox(height: 10),
+            _buildMenuItem(Icons.edit, 'Edit Profile', () async {
+              await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileUpdateScreen()));
+              _loadProfileData();
             }),
             const SizedBox(height: 10),
             _buildMenuItem(Icons.help_outline, 'Help & Support', () {
