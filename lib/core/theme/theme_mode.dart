@@ -6,19 +6,24 @@ import 'package:aqua_life/core/services/storage/user_session_service.dart';
 
 enum AppThemeMode { light, dark, auto }
 
-final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, AppThemeMode>((ref) {
+final themeModeProvider =
+    StateNotifierProvider<ThemeModeNotifier, AppThemeMode>((ref) {
   return ThemeModeNotifier(ref.read(sharedPreferencesProvider));
 });
 
 final effectiveThemeModeProvider = Provider<ThemeMode>((ref) {
   final themeMode = ref.watch(themeModeProvider);
+
   switch (themeMode) {
     case AppThemeMode.light:
       return ThemeMode.light;
+
     case AppThemeMode.dark:
       return ThemeMode.dark;
+
     case AppThemeMode.auto:
       final luxAsync = ref.watch(luxStreamProvider);
+
       return luxAsync.when(
         data: (lux) => lux <= 10 ? ThemeMode.dark : ThemeMode.light,
         loading: () => ThemeMode.system,
@@ -29,6 +34,7 @@ final effectiveThemeModeProvider = Provider<ThemeMode>((ref) {
 
 class ThemeModeNotifier extends StateNotifier<AppThemeMode> {
   final SharedPreferences _prefs;
+
   static const String _keyThemeMode = 'theme_mode';
 
   ThemeModeNotifier(this._prefs) : super(AppThemeMode.dark) {
@@ -37,24 +43,34 @@ class ThemeModeNotifier extends StateNotifier<AppThemeMode> {
 
   void _loadThemeMode() {
     final stored = _prefs.getString(_keyThemeMode);
-    if (stored == 'light') {
-      state = AppThemeMode.light;
-    } else if (stored == 'dark') {
-      state = AppThemeMode.dark;
-    } else if (stored == 'auto') {
-      state = AppThemeMode.auto;
-    } else {
-      state = AppThemeMode.dark;
+
+    switch (stored) {
+      case 'light':
+        state = AppThemeMode.light;
+        break;
+
+      case 'dark':
+        state = AppThemeMode.dark;
+        break;
+
+      case 'auto':
+        state = AppThemeMode.auto;
+        break;
+
+      default:
+        state = AppThemeMode.dark;
     }
   }
 
   Future<void> setThemeMode(AppThemeMode mode) async {
     state = mode;
-    final value = mode == AppThemeMode.light
-        ? 'light'
-        : mode == AppThemeMode.dark
-            ? 'dark'
-            : 'auto';
+
+    final value = switch (mode) {
+      AppThemeMode.light => 'light',
+      AppThemeMode.dark => 'dark',
+      AppThemeMode.auto => 'auto',
+    };
+
     await _prefs.setString(_keyThemeMode, value);
   }
 }

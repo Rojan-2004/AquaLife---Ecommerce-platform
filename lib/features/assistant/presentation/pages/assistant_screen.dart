@@ -54,9 +54,10 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   }
 
   Future<void> _showImageSourcePicker() async {
+    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF112240),
+      backgroundColor: cs.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -67,16 +68,16 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: Color(0xFF00B4D8)),
-                title: const Text('Camera', style: TextStyle(color: Colors.white)),
+                leading: Icon(Icons.camera_alt, color: cs.primary),
+                title: Text('Camera', style: TextStyle(color: cs.onSurface)),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: Color(0xFF00B4D8)),
-                title: const Text('Gallery', style: TextStyle(color: Colors.white)),
+                leading: Icon(Icons.photo_library, color: cs.primary),
+                title: Text('Gallery', style: TextStyle(color: cs.onSurface)),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
@@ -177,6 +178,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     final isUser = msg['role'] == 'user';
     final text = msg['content'] as String? ?? '';
     final imagePath = msg['image'] as String?;
+    final cs = Theme.of(context).colorScheme;
 
     Widget? content;
     if (imagePath != null && imagePath.isNotEmpty) {
@@ -200,7 +202,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       content = Text(
         text,
         style: TextStyle(
-          color: isUser ? Colors.white : const Color(0xFF7AB8CC),
+          color: isUser ? cs.onSurface : cs.onSurface.withValues(alpha: 0.72),
           fontSize: 14,
         ),
       );
@@ -213,7 +215,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
           Text(
             text,
             style: TextStyle(
-              color: isUser ? Colors.white : const Color(0xFF7AB8CC),
+              color: isUser ? cs.onSurface : cs.onSurface.withValues(alpha: 0.72),
               fontSize: 14,
             ),
           ),
@@ -227,9 +229,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isUser ? const Color(0xFF00B4D8) : const Color(0xFF112240),
+          color: isUser ? cs.primary : cs.surface,
           borderRadius: BorderRadius.circular(16),
-          border: isUser ? null : Border.all(color: const Color(0xFF1E3A5C)),
+          border: isUser ? null : Border.all(color: cs.outline),
         ),
         constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.75),
         child: content,
@@ -239,12 +241,13 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('AI Assistant', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('AI Assistant', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
       ),
       body: Column(
         children: [
@@ -260,9 +263,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             ),
           ),
           if (_loading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Center(child: CircularProgressIndicator(color: cs.primary)),
             ),
 
           if (_messages.length <= 2)
@@ -277,9 +280,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ActionChip(
-                      label: Text(_suggestions[idx], style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 12)),
-                      backgroundColor: const Color(0xFF112240),
-                      side: const BorderSide(color: Color(0xFF1E3A5C)),
+                      label: Text(_suggestions[idx], style: TextStyle(color: cs.primary, fontSize: 12)),
+                      backgroundColor: cs.surface,
+                      side: BorderSide(color: cs.outline),
                       onPressed: () => _sendMessage(_suggestions[idx]),
                     ),
                   );
@@ -289,31 +292,31 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0D1F35),
-              border: Border(top: BorderSide(color: Color(0xFF1E3A5C))),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              border: Border(top: BorderSide(color: cs.outline)),
             ),
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.camera_alt, color: Color(0xFF00B4D8)),
+                  icon: Icon(Icons.camera_alt, color: cs.primary),
                   onPressed: _showImageSourcePicker,
                   tooltip: 'Send photo',
                 ),
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: cs.onSurface),
+                    decoration: InputDecoration(
                       hintText: 'Ask your aquarium question...',
-                      hintStyle: TextStyle(color: Color(0xFF4A6B82)),
+                      hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.48)),
                       border: InputBorder.none,
                     ),
                     onSubmitted: _sendMessage,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.send, color: Color(0xFF00B4D8)),
+                  icon: Icon(Icons.send, color: cs.primary),
                   onPressed: () => _sendMessage(_controller.text),
                 ),
               ],
