@@ -41,7 +41,7 @@ class ThemeModeNotifier extends StateNotifier<AppThemeMode> {
       state = AppThemeMode.light;
     } else if (stored == 'dark') {
       state = AppThemeMode.dark;
-    } else if (stored == 'auto') {
+    } else if (stored == 'auto' || stored == 'system') {
       state = AppThemeMode.auto;
     } else {
       state = AppThemeMode.dark;
