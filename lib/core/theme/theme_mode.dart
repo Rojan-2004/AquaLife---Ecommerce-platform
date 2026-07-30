@@ -54,6 +54,7 @@ class ThemeModeNotifier extends StateNotifier<AppThemeMode> {
         break;
 
       case 'auto':
+      case 'system':
         state = AppThemeMode.auto;
         break;
 

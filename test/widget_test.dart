@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aqua_life/app/app.dart';
 import 'package:aqua_life/app/theme/app_theme.dart';
-import 'package:aqua_life/app/theme/app_colors.dart';
 import 'package:aqua_life/core/shared_prefs/user_shared_prefs.dart';
 import 'package:aqua_life/core/services/storage/user_session_service.dart';
 import 'package:aqua_life/features/splash/presentation/pages/splash_page.dart';
 import 'package:aqua_life/features/splash/presentation/view_model/splash_view_model.dart';
+import 'package:aqua_life/core/theme/theme_mode.dart';
 
 class MockUserSharedPrefs extends Mock implements UserSharedPrefs {}
 
@@ -18,12 +19,13 @@ class MockSplashViewModel extends SplashViewModel {
   MockSplashViewModel()
       : super(
           userSharedPrefs: MockUserSharedPrefs(),
-          userSessionService: MockUserSessionService(),
         );
 
   @override
   Future<void> init(BuildContext context) async {}
 }
+
+class MockThemePrefs extends Mock implements SharedPreferences {}
 
 Widget pumpApp() {
   return ProviderScope(
@@ -31,6 +33,11 @@ Widget pumpApp() {
       userSharedPrefsProvider.overrideWithValue(MockUserSharedPrefs()),
       userSessionServiceProvider.overrideWithValue(MockUserSessionService()),
       splashViewModelProvider.overrideWith((ref) => MockSplashViewModel()),
+      themeModeProvider.overrideWith((ref) {
+        final prefs = MockThemePrefs();
+        when(() => prefs.getString(any())).thenReturn(null);
+        return ThemeModeNotifier(prefs);
+      }),
     ],
     child: const App(),
   );
@@ -104,7 +111,7 @@ void main() {
         ),
       );
       final textStyle = DefaultTextStyle.of(tester.element(find.byType(Text)));
-      expect(textStyle.style?.fontFamily, 'OpenSans');
+      expect(textStyle.style.fontFamily, 'OpenSans');
     });
 
     testWidgets('AppBar should have transparent background',

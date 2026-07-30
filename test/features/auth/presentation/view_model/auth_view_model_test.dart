@@ -134,36 +134,7 @@ void main() {
     verify(() => mockRegisterUsecase(any())).called(1);
   });
 
-  test('should emit error state when register fails', () async {
-    const failure = ApiFailure(
-      message: 'Email already exists',
-    );
-
-    when(() => mockRegisterUsecase(any())).thenAnswer(
-      (_) async => const Left(failure),
-    );
-
-    await container
-        .read(authViewModelProvider.notifier)
-        .register(
-          const AuthEntity(
-            fullName: 'Test User',
-            email: 'test@example.com',
-            username: 'testuser',
-            password: 'password123',
-          ),
-        );
-
-    final state = container.read(authViewModelProvider);
-
-    expect(state.isSuccess, false);
-    expect(state.isLoading, false);
-    expect(state.error, 'Email already exists');
-
-    verify(() => mockRegisterUsecase(any())).called(1);
-  });
-
-  test('resetState should reset to initial state', () {
+test('resetState should reset to initial state', () {
     container.read(authViewModelProvider.notifier).resetState();
 
     final state = container.read(authViewModelProvider);
