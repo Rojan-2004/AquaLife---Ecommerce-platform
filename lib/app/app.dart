@@ -9,12 +9,7 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
-    final effectiveThemeMode = ref.read(themeModeProvider.notifier).toMaterialThemeMode();
-
-    if (themeMode == AppThemeMode.auto) {
-      ref.read(themeModeProvider.notifier).listenToLightSensor(ref);
-    }
+    final effectiveThemeMode = ref.watch(effectiveThemeModeProvider);
 
     return MaterialApp(
       title: 'AquaLife',
