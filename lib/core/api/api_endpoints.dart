@@ -27,7 +27,8 @@ class ApiEndpoints {
   static const String authProfile = '/api/v1/auth/profile';
   static const String authLogout = '/api/v1/auth/logout';
   static const String authRefreshToken = '/api/v1/auth/refresh-token';
-  static const String authUpdateProfile = '/api/v1/auth/update-profile';
+  static const String authUpdateProfile = '/api/v1/auth/profile';
+  static const String authChangePassword = '/api/v1/auth/password';
   static const String authUploadProfilePicture =
       '/api/v1/auth/upload-profile-picture';
   static const String products = '/api/v1/products';
