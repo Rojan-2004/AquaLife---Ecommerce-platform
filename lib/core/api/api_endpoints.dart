@@ -5,7 +5,7 @@ class ApiEndpoints {
 
   static String get _localIp {
     if (Platform.isAndroid) {
-      return '10.0.2.2';
+      return '192.168.100.101';
     }
     if (Platform.isIOS) {
       return '127.0.0.1';

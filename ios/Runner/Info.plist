@@ -6,6 +6,8 @@
 	<string>Camera access is needed to identify fish species</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photo library access is needed to select fish photos for identification</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Location access is used to autofill your shipping address during checkout</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

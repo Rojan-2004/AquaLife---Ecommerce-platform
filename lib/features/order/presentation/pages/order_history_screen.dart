@@ -61,46 +61,47 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
       case 'cancelled':
         return const Color(0xFFf87171);
       default:
-        return Colors.white54;
+        return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A1628),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF00B4D8))),
+      return Scaffold(
+        backgroundColor: cs.surface,
+        body: Center(child: CircularProgressIndicator(color: cs.primary)),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Order History', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Order History', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold)),
       ),
       body: _error != null
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.wifi_off, color: Colors.white24, size: 48),
+                  Icon(Icons.wifi_off, color: cs.onSurface.withValues(alpha: 0.24), size: 48),
                   const SizedBox(height: 12),
-                  const Text('Failed to load order history', style: TextStyle(color: Colors.white54)),
+                  Text('Failed to load order history', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54))),
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: _fetchOrders,
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3A5C)),
+                    style: ElevatedButton.styleFrom(backgroundColor: cs.tertiary),
                     child: const Text('Retry'),
                   ),
                 ],
               ),
             )
           : _orders.isEmpty
-              ? const Center(
-                  child: Text('No orders placed yet', style: TextStyle(color: Color(0xFF7AB8CC))),
+              ? Center(
+                  child: Text('No orders placed yet', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72))),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),

@@ -1,8 +1,8 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:aqua_life/app/theme/app_colors.dart';
 import 'package:aqua_life/app/constants/api_constants.dart';
 import 'package:aqua_life/features/auth/presentation/pages/login_page.dart';
 
@@ -41,37 +41,35 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       final name = _nameController.text.trim();
       final password = _passwordController.text;
 
-      var res = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/api/auth/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-        }),
-      );
-
-      if (res.statusCode != 200 && res.statusCode != 201) {
-        // Fallback to Express backend register endpoint
-        res = await http.post(
-          Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/register'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'fullName': name,
-            'email': email,
-            'password': password,
-          }),
-        );
+      http.Response res;
+      try {
+        res = await http
+            .post(
+              Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/register'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'fullName': name,
+                'email': email,
+                'password': password,
+              }),
+            )
+            .timeout(const Duration(seconds: 15));
+      } on http.ClientException catch (_) {
+        throw Exception('Cannot reach server at ${ApiConstants.baseUrl}. Check your connection and that the backend is running.');
+      } on TimeoutException catch (_) {
+        throw Exception('Request timed out. The server may be slow or unreachable.');
+      } catch (e) {
+        throw Exception(_describeApiError(e, 'Registration failed'));
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Registration successful! Please login.'),
-            backgroundColor: const Color(0xFF112240),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ));
+         if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+             content: const Text('Registration successful! Please log in.'),
+             backgroundColor: Theme.of(context).colorScheme.surface,
+             behavior: SnackBarBehavior.floating,
+             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+           ));
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -98,19 +96,43 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
   }
 
+  static String _describeApiError(Object e, String fallback) {
+    final message = e.toString().trim();
+    if (message.isEmpty) return fallback;
+
+    if (message.contains('SocketException') || message.contains('Connection timed out') || message.contains('Connection refused')) {
+      return 'Cannot reach server at ${ApiConstants.baseUrl}. Verify the backend is running and accessible from the emulator.';
+    }
+    if (message.contains('HandshakeException') || message.contains('TLS')) {
+      return 'SSL handshake failed. Ensure your backend uses HTTP for local development.';
+    }
+    if (message.contains('timeout')) {
+      return 'Request timed out. The server may be slow or unreachable.';
+    }
+
+    final cleaned = message.replaceAll('Exception: ', '').trim();
+    if (cleaned != message && cleaned.isNotEmpty) return cleaned;
+
+    return fallback;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final compact = MediaQuery.sizeOf(context).width < 360;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF0A1628), Color(0xFF0D2137)],
-            stops: [0.0, 0.4],
+            colors: [
+              cs.surface,
+              cs.surface.withValues(alpha: 0.8),
+            ],
+            stops: const [0.0, 0.4],
           ),
         ),
         child: SafeArea(
@@ -146,12 +168,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             MaterialPageRoute(builder: (context) => const LoginPage()),
           );
         },
-        icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlue),
+        icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
       ),
     );
   }
 
   Widget _buildLogo(bool compact) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         Container(
@@ -159,11 +182,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           height: compact ? 64 : 75,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF112240),
-            border: Border.all(color: const Color(0xFF1E3A5C), width: 1.5),
+            color: cs.surface,
+            border: Border.all(color: cs.outline, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryBlue.withOpacity(0.25),
+                color: cs.primary.withValues(alpha: 0.25),
                 blurRadius: compact ? 14 : 20,
                 spreadRadius: compact ? 2 : 4,
               ),
@@ -173,7 +196,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             'assets/Aqua_life_logo.png',
             height: compact ? 64 : 75,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Icon(Icons.water_drop, color: AppColors.primaryBlue, size: compact ? 34 : 40),
+            errorBuilder: (_, __, ___) => Icon(Icons.water_drop, color: cs.primary, size: compact ? 34 : 40),
           ),
         ),
         SizedBox(height: compact ? 8 : 12),
@@ -183,7 +206,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             fontSize: compact ? 20 : 24,
             fontWeight: FontWeight.bold,
             letterSpacing: compact ? 2 : 3,
-            color: Colors.white,
+            color: cs.onSurface,
           ),
         ),
       ],
@@ -286,11 +309,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     String? Function(String?)? validator,
     VoidCallback? onTogglePassword,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1F35),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E3A5C)),
+        border: Border.all(color: cs.outline),
       ),
       child: TextFormField(
         controller: controller,
@@ -300,13 +324,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         autocorrect: false,
         enableSuggestions: false,
         obscureText: isPassword && !isPasswordVisible,
-        style: TextStyle(color: Colors.white, fontSize: compact ? 14 : 15),
+        style: TextStyle(color: cs.onSurface, fontSize: compact ? 14 : 15),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF4A6B82)),
+          hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.48)),
           prefixIcon: SizedBox(
             width: compact ? 36 : 40,
-            child: Icon(icon, color: const Color(0xFF7AB8CC)),
+            child: Icon(icon, color: cs.onSurface.withValues(alpha: 0.72)),
           ),
           suffixIcon: isPassword
               ? SizedBox(
@@ -316,7 +340,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       isPasswordVisible
                           ? Icons.visibility
                           : Icons.visibility_off,
-                      color: const Color(0xFF7AB8CC),
+                      color: cs.onSurface.withValues(alpha: 0.72),
                     ),
                     onPressed: onTogglePassword,
                   ),
@@ -355,15 +379,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       width: double.infinity,
       height: compact ? 50 : 55,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF00B4D8), Color(0xFF0077B6)],
+        gradient: LinearGradient(
+          colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00B4D8).withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

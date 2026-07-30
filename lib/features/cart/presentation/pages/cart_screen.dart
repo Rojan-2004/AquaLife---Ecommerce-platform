@@ -41,36 +41,38 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final compact = MediaQuery.sizeOf(context).width < 360;
     final cartState = ref.watch(cartViewModelProvider);
 
     if (cartState.isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A1628),
+      return Scaffold(
+        backgroundColor: cs.surface,
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF00B4D8)),
+          child: CircularProgressIndicator(color: cs.primary),
         ),
       );
     }
 
     if (cartState.error != null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0A1628),
+        backgroundColor: cs.surface,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.wifi_off, color: Colors.white24, size: 48),
+              Icon(Icons.wifi_off, color: cs.onSurface.withValues(alpha: 0.24), size: 48),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Failed to load cart',
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54)),
               ),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () => ref.read(cartViewModelProvider.notifier).loadCart(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A3A5C),
+                  backgroundColor: cs.tertiary,
                 ),
                 child: const Text('Retry'),
               ),
@@ -85,17 +87,17 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final total = subtotal > 0 ? subtotal.toDouble() + 50 : 0.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Your Cart',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold),
         ),
         leading: widget.onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: cs.onSurface),
                 onPressed: widget.onBack,
               )
             : null,
@@ -120,14 +122,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       final imgUrl = item.image;
                       final fullImgUrl = ApiConstants.getFullImageUrl(imgUrl);
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF112240),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF1E3A5C)),
-                        ),
+                       return Container(
+                         margin: const EdgeInsets.only(bottom: 12),
+                         padding: const EdgeInsets.all(12),
+                         decoration: BoxDecoration(
+                           color: cs.surface,
+                           borderRadius: BorderRadius.circular(16),
+                           border: Border.all(color: cs.outline),
+                         ),
                         child: Row(
                           children: [
                             ClipRRect(
@@ -147,26 +149,26 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                                 color: Color(0xFF00B4D8),
                                               ),
                                             ),
-                                      errorBuilder: (context, error, stackTrace) => Container(
-                                        width: 60,
-                                        height: 60,
-                                        color: const Color(0xFF112240),
-                                        child: const Icon(
-                                          Icons.image_not_supported,
-                                          color: Colors.white24,
-                                          size: 24,
-                                        ),
-                                      ),
-                                    )
-                                  : Container(
-                                      width: 60,
-                                      height: 60,
-                                      color: const Color(0xFF112240),
-                                      child: const Icon(
-                                        Icons.set_meal,
-                                        color: Colors.white24,
-                                        size: 24,
-                                      ),
+                                       errorBuilder: (context, error, stackTrace) => Container(
+                                         width: 60,
+                                         height: 60,
+                                         color: cs.surface,
+                                         child: Icon(
+                                           Icons.image_not_supported,
+                                           color: cs.onSurface.withValues(alpha: 0.24),
+                                           size: 24,
+                                         ),
+                                       ),
+                                     )
+                                   : Container(
+                                       width: 60,
+                                       height: 60,
+                                       color: cs.surface,
+                                       child: Icon(
+                                         Icons.set_meal,
+                                         color: cs.onSurface.withValues(alpha: 0.24),
+                                         size: 24,
+                                       ),
                                     ),
                             ),
                             const SizedBox(width: 12),
@@ -175,59 +177,59 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Rs. ${price.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF00B4D8),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.remove_circle_outline,
-                                          color: Color(0xFF00B4D8),
-                                          size: 20,
-                                        ),
-                                        onPressed: () => _updateQuantity(
-                                          cartItemId,
-                                          quantity - 1,
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        '$quantity',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.add_circle_outline,
-                                          color: Color(0xFF00B4D8),
-                                          size: 20,
-                                        ),
-                                        onPressed: () => _updateQuantity(
-                                          cartItemId,
-                                          quantity + 1,
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                      ),
+                                     name,
+                                     style: TextStyle(
+                                       color: cs.onSurface,
+                                       fontWeight: FontWeight.bold,
+                                       fontSize: 14,
+                                     ),
+                                   ),
+                                   const SizedBox(height: 4),
+                                   Text(
+                                     'Rs. ${price.toStringAsFixed(0)}',
+                                     style: TextStyle(
+                                       color: cs.primary,
+                                       fontWeight: FontWeight.bold,
+                                     ),
+                                   ),
+                                   const SizedBox(height: 6),
+                                   Row(
+                                     children: [
+                                       IconButton(
+                                         icon: Icon(
+                                           Icons.remove_circle_outline,
+                                           color: cs.primary,
+                                           size: 20,
+                                         ),
+                                         onPressed: () => _updateQuantity(
+                                           cartItemId,
+                                           quantity - 1,
+                                         ),
+                                         padding: EdgeInsets.zero,
+                                         constraints: const BoxConstraints(),
+                                       ),
+                                       const SizedBox(width: 8),
+                                       Text(
+                                         '$quantity',
+                                         style: TextStyle(
+                                           color: cs.onSurface,
+                                           fontWeight: FontWeight.bold,
+                                         ),
+                                       ),
+                                       const SizedBox(width: 8),
+                                       IconButton(
+                                         icon: Icon(
+                                           Icons.add_circle_outline,
+                                           color: cs.primary,
+                                           size: 20,
+                                         ),
+                                         onPressed: () => _updateQuantity(
+                                           cartItemId,
+                                           quantity + 1,
+                                         ),
+                                         padding: EdgeInsets.zero,
+                                         constraints: const BoxConstraints(),
+                                       ),
                                     ],
                                   ),
                                 ],
@@ -253,16 +255,17 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Widget _buildEmptyState(bool compact) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Text('🐟', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Your cart is empty',
             style: TextStyle(
-              color: Colors.white,
+              color: cs.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -271,8 +274,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ElevatedButton(
             onPressed: widget.onBack,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00B4D8),
-              foregroundColor: Colors.white,
+              backgroundColor: cs.primary,
+              foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -289,12 +292,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Widget _buildOrderSummary(bool compact, double subtotal, double total) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF112240),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: Color(0xFF1E3A5C))),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: cs.outline)),
       ),
       child: SafeArea(
         top: false,
@@ -304,52 +308,52 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Subtotal',
-                  style: TextStyle(color: Color(0xFF7AB8CC)),
+                  style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72)),
                 ),
                 Text(
                   'Rs. ${subtotal.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: cs.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Delivery Fee',
-                  style: TextStyle(color: Color(0xFF7AB8CC)),
+                  style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72)),
                 ),
                 Text(
                   'Rs. 50',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: cs.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-            const Divider(color: Color(0xFF1E3A5C), height: 20),
+            Divider(color: cs.outline, height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Total',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: cs.onSurface,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   'Rs. ${total.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    color: Color(0xFF00B4D8),
+                  style: TextStyle(
+                    color: cs.primary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -368,8 +372,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00B4D8),
-                  foregroundColor: Colors.white,
+                  backgroundColor: cs.primary,
+                  foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:aqua_life/core/shared_prefs/user_shared_prefs.dart';
-import 'package:aqua_life/core/services/storage/user_session_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:aqua_life/app/constants/api_constants.dart';
 import 'package:aqua_life/features/onboarding/presentation/pages/onboarding_page.dart';
@@ -14,19 +13,15 @@ import 'package:aqua_life/features/dashboard/presentation/pages/dashboard_page.d
 final splashViewModelProvider = StateNotifierProvider<SplashViewModel, void>((ref) {
   return SplashViewModel(
     userSharedPrefs: ref.watch(userSharedPrefsProvider),
-    userSessionService: ref.watch(userSessionServiceProvider),
   );
 });
 
 class SplashViewModel extends StateNotifier<void> {
   final UserSharedPrefs _userSharedPrefs;
-  final UserSessionService _userSessionService;
 
   SplashViewModel({
     required UserSharedPrefs userSharedPrefs,
-    required UserSessionService userSessionService,
   })  : _userSharedPrefs = userSharedPrefs,
-        _userSessionService = userSessionService,
         super(null);
 
   Future<void> init(BuildContext context) async {
@@ -58,17 +53,19 @@ class SplashViewModel extends StateNotifier<void> {
       }
 
       try {
-        final meRes = await http.get(
-          Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/me'),
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
-        );
+        final meRes = await http
+            .get(
+              Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/me'),
+              headers: {'Authorization': 'Bearer $token'},
+            )
+            .timeout(const Duration(seconds: 15));
         if (meRes.statusCode == 200) {
           await secureStorage.write(key: 'auth_token', value: token);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const DashboardPage()),
-          );
+          if (context.mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const DashboardPage()),
+            );
+          }
           return;
         }
       } catch (_) {
