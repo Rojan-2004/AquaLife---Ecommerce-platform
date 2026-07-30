@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aqua_life/app/theme/app_theme.dart';
 import 'package:aqua_life/app/constants/api_constants.dart';
 import 'package:aqua_life/app/services/api_service.dart';
 import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';

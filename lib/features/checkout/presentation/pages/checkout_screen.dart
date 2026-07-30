@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:aqua_life/app/services/api_service.dart';
 import 'package:aqua_life/features/cart/presentation/view_model/cart_view_model.dart';
 import 'package:aqua_life/features/order/presentation/view_model/order_view_model.dart';
 import 'package:aqua_life/features/order/presentation/pages/order_success_screen.dart';
@@ -27,7 +26,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _landmarkCtrl = TextEditingController();
 
   bool _isLoading = true;
-  bool _placing = false;
 
   @override
   void initState() {
@@ -89,57 +87,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _placeOrder() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _placing = true);
 
-    try {
-      final res = await ApiService.post('/api/orders', {
-        'shippingAddress': {
-          'fullName': _nameCtrl.text.trim(),
-          'email': _emailCtrl.text.trim(),
-          'phone': _phoneCtrl.text.trim(),
-          'province': _provinceCtrl.text.trim(),
-          'district': _districtCtrl.text.trim(),
-          'city': _cityCtrl.text.trim(),
-          'street': _streetCtrl.text.trim(),
-          'postalCode': _postalCodeCtrl.text.trim(),
-          'landmark': _landmarkCtrl.text.trim(),
-        }
-      });
+    final shippingAddress = <String, dynamic>{
+      'fullName': _nameCtrl.text.trim(),
+      'email': _emailCtrl.text.trim(),
+      'phone': _phoneCtrl.text.trim(),
+      'province': _provinceCtrl.text.trim(),
+      'district': _districtCtrl.text.trim(),
+      'city': _cityCtrl.text.trim(),
+      'street': _streetCtrl.text.trim(),
+      'postalCode': _postalCodeCtrl.text.trim(),
+      'landmark': _landmarkCtrl.text.trim(),
+    };
 
-      setState(() => _placing = false);
+    final orderId = await ref
+        .read(orderViewModelProvider.notifier)
+        .placeOrder(shippingAddress);
 
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final data = jsonDecode(res.body);
-        final orderId = data['orderId'] ?? data['data']?['id'] ?? data['id'] ?? 'OrderPlaced';
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Order Placed Successfully!'),
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ));
+    if (orderId != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Order Placed Successfully!'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => OrderSuccessScreen(orderId: orderId.toString())),
-          );
-        }
-      } else {
-        final data = jsonDecode(res.body);
-        throw Exception(data['message'] ?? 'Failed to place order');
-      }
-    } catch (e) {
-      setState(() => _placing = false);
-      if (mounted) {
-        final errMsg = e.toString().replaceAll('Exception: ', '');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(errMsg),
-          backgroundColor: const Color(0xFF7f1d1d),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ));
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => OrderSuccessScreen(orderId: orderId)),
+      );
     }
   }
 
@@ -168,6 +144,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         }
       });
     }
+
+    final isProcessing = orderState.isAuthenticating;
 
     if (_isLoading || cartState.isLoading) {
       return Scaffold(
@@ -273,14 +251,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _placing ? null : _placeOrder,
+                  onPressed: isProcessing ? null : _placeOrder,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: cs.primary,
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: _placing
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  child: isProcessing
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2)),
+                            const SizedBox(width: 12),
+                            Text('Confirm with fingerprint...', style: TextStyle(fontSize: 14)),
+                          ],
+                        )
                       : const Text('Place Order', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
