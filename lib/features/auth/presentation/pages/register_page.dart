@@ -1,8 +1,8 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:aqua_life/app/theme/app_colors.dart';
 import 'package:aqua_life/app/constants/api_constants.dart';
 import 'package:aqua_life/features/auth/presentation/pages/login_page.dart';
 
@@ -41,27 +41,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       final name = _nameController.text.trim();
       final password = _passwordController.text;
 
-      var res = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/api/auth/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-        }),
-      );
-
-      if (res.statusCode != 200 && res.statusCode != 201) {
-        // Fallback to Express backend register endpoint
-        res = await http.post(
-          Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/register'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'fullName': name,
-            'email': email,
-            'password': password,
-          }),
-        );
+      http.Response res;
+      try {
+        res = await http
+            .post(
+              Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/register'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'fullName': name,
+                'email': email,
+                'password': password,
+              }),
+            )
+            .timeout(const Duration(seconds: 15));
+      } on http.ClientException catch (_) {
+        throw Exception('Cannot reach server at ${ApiConstants.baseUrl}. Check your connection and that the backend is running.');
+      } on TimeoutException catch (_) {
+        throw Exception('Request timed out. The server may be slow or unreachable.');
+      } catch (e) {
+        throw Exception(_describeApiError(e, 'Registration failed'));
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
@@ -96,6 +94,26 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  static String _describeApiError(Object e, String fallback) {
+    final message = e.toString().trim();
+    if (message.isEmpty) return fallback;
+
+    if (message.contains('SocketException') || message.contains('Connection timed out') || message.contains('Connection refused')) {
+      return 'Cannot reach server at ${ApiConstants.baseUrl}. Verify the backend is running and accessible from the emulator.';
+    }
+    if (message.contains('HandshakeException') || message.contains('TLS')) {
+      return 'SSL handshake failed. Ensure your backend uses HTTP for local development.';
+    }
+    if (message.contains('timeout')) {
+      return 'Request timed out. The server may be slow or unreachable.';
+    }
+
+    final cleaned = message.replaceAll('Exception: ', '').trim();
+    if (cleaned != message && cleaned.isNotEmpty) return cleaned;
+
+    return fallback;
   }
 
   @override

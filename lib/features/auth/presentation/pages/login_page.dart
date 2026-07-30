@@ -36,117 +36,46 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      String? sessionCookie;
-      Map<String, dynamic>? userData;
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
 
-      try {
-        // Try NextAuth flow first
-        final csrfRes = await http.get(Uri.parse('${ApiConstants.baseUrl}/api/auth/csrf'));
-        if (csrfRes.statusCode == 200) {
-          final csrfData = jsonDecode(csrfRes.body);
-          final csrfToken = csrfData['csrfToken'];
-          if (csrfToken != null) {
-            final loginRes = await http.post(
-              Uri.parse('${ApiConstants.baseUrl}/api/auth/callback/credentials'),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({
-                'csrfToken': csrfToken,
-                'email': _emailController.text,
-                'password': _passwordController.text,
-                'json': 'true',
-              }),
-            );
+      final loginRes = await http
+          .post(
+            Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 15));
 
-            final setCookie = loginRes.headers['set-cookie'];
-            if (setCookie != null) {
-              final cookies = setCookie.split(RegExp(r',(?=[^;]+(?:;|$))'));
-              for (var cookie in cookies) {
-                if (cookie.contains('next-auth.session-token') || cookie.contains('sessionToken')) {
-                  sessionCookie = cookie.split(';').first;
-                  break;
-                }
-              }
-              sessionCookie ??= setCookie.split(';').first;
-            }
-          }
-        }
-      } catch (_) {
-        // NextAuth endpoints not active/supported
+      if (loginRes.statusCode != 200) {
+        final data = jsonDecode(loginRes.body);
+        throw Exception(data['message'] ?? 'Invalid email or password');
       }
 
-      // Fallback to Express backend login if NextAuth yielded no cookie
-      if (sessionCookie == null) {
-        final loginRes = await http.post(
-          Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/login'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': _emailController.text,
-            'password': _passwordController.text,
-          }),
-        );
+      final data = jsonDecode(loginRes.body) as Map<String, dynamic>;
+      final token = data['token'] as String?;
+      final refreshToken = data['refreshToken'] as String?;
+      final userData = data['data'] as Map<String, dynamic>?;
 
-        if (loginRes.statusCode == 200) {
-          final data = jsonDecode(loginRes.body);
-          final token = data['token'] ?? data['data']?['token'];
-          userData = data['data'] ?? data['user'];
-          if (token != null) {
-            sessionCookie = 'token=$token';
-          }
-        } else {
-          final data = jsonDecode(loginRes.body);
-          throw Exception(data['message'] ?? 'Invalid email or password');
-        }
+      if (token == null) {
+        throw Exception('Login failed: missing token');
       }
 
-      if (sessionCookie == null) {
-        throw Exception('Invalid email or password');
-      }
-
-      // Save session cookie
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('session_cookie', sessionCookie);
+      await prefs.setString('session_cookie', 'token=$token');
+      await prefs.setString('user_data', jsonEncode(userData));
 
-      // Also persist token for ApiClient auth interceptor
       final secureStorage = const FlutterSecureStorage();
-      final tokenValue = sessionCookie.contains('=')
-          ? sessionCookie.split('=').sublist(1).join('=').split(';').first.trim()
-          : sessionCookie;
-      await secureStorage.write(key: 'auth_token', value: tokenValue);
-
-      // Validate session & check role
-      if (userData == null) {
-        final sessionRes = await http.get(
-          Uri.parse('${ApiConstants.baseUrl}/api/auth/session'),
-          headers: {'Cookie': sessionCookie},
-        );
-
-        if (sessionRes.statusCode == 200) {
-          final sessionData = jsonDecode(sessionRes.body);
-          userData = sessionData['user'];
-        } else {
-          // Fallback to /api/v1/auth/me
-          final meRes = await http.get(
-            Uri.parse('${ApiConstants.baseUrl}/api/v1/auth/me'),
-            headers: {
-              'Cookie': sessionCookie,
-              'Authorization': 'Bearer ${sessionCookie.replaceAll('token=', '')}'
-            },
-          );
-          if (meRes.statusCode == 200) {
-            final meData = jsonDecode(meRes.body);
-            userData = meData['data'] ?? meData;
-          }
-        }
+      await secureStorage.write(key: 'auth_token', value: token);
+      if (refreshToken != null) {
+        await secureStorage.write(key: 'refresh_token', value: refreshToken);
       }
 
-      if (userData != null) {
-        final role = userData['role'];
-        if (role == 'admin') {
-          await prefs.remove('session_cookie');
-          throw Exception('Admin access is web-only');
-        }
-
-        await prefs.setString('user_data', jsonEncode(userData));
+      if (userData != null && userData['role'] == 'admin') {
+        await prefs.remove('session_cookie');
+        await secureStorage.delete(key: 'auth_token');
+        throw Exception('Admin access is web-only');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -155,14 +84,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ));
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const DashboardPage()),
-          );
-        }
-        return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardPage()),
+        );
       }
-      throw Exception('Failed to retrieve user session');
     } catch (e) {
       if (mounted) {
         final errMsg = e.toString().replaceAll('Exception: ', '');
